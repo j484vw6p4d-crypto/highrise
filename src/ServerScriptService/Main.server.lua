@@ -161,4 +161,4 @@ Remotes.get("ShopEquip").OnServerEvent:Connect(function(player, id)
 end)
 
 Round.start()
-print("[Highrise] live. lighting=", Lighting.ClockTime, "map=", workspace:FindFirstChild("HighriseMap") ~= nil, "build=", Config.BuildId)
+print("[Highrise] live. lighting=", Lighting.ClockTime, "map=", workspace:FindFirstChild("Highrise") ~= nil, "build=", Config.BuildId)

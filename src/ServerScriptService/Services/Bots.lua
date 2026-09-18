@@ -97,12 +97,12 @@ function Bots.spawn(count: number)
 	local parent = workspace:FindFirstChild("HighriseMap") or workspace:FindFirstChild("Highrise") or workspace
 	local spawnList = World.spawns()
 	local fallback = {
-		Vector3.new(28, 5, 22),
-		Vector3.new(-28, 5, 22),
-		Vector3.new(28, 5, -22),
-		Vector3.new(-28, 5, -22),
-		Vector3.new(0, 5, 30),
-		Vector3.new(0, 5, -30),
+		Vector3.new(10, 6, 10),
+		Vector3.new(-10, 6, 10),
+		Vector3.new(10, 6, -10),
+		Vector3.new(-10, 6, -10),
+		Vector3.new(0, 6, 12),
+		Vector3.new(0, 6, -10),
 	}
 	for i = 1, count do
 		local color = COLORS[((i - 1) % #COLORS) + 1]

@@ -558,23 +558,6 @@ function Round.beginPlay()
 	end
 	weaponsAt = os.clock() + Config.RevealSeconds + Config.GraceSeconds
 	pushState()
-	task.delay(Config.RevealSeconds, function()
-		if phase ~= "Reveal" then
-			return
-		end
-		phase = "Round"
-		deadline = os.clock() + Config.RoundSeconds
-		for _, actor in ipairs(allActors()) do
-			setSpeed(actor)
-		end
-		task.delay(Config.GraceSeconds, function()
-			if phase == "Round" then
-				Bots.startBrain(Round.getRole, Round.attack, Round.attack)
-				pushState()
-			end
-		end)
-		pushState()
-	end)
 end
 
 function Round.lobby()
@@ -617,17 +600,31 @@ function Round.rescue()
 end
 
 function Round.tick()
-	Round.rescue()
+	pcall(Round.rescue)
 	if os.clock() < deadline then
 		return
 	end
 	if phase == "Lobby" then
 		if #allActors() >= Config.MinPlayersToStart then
-			Round.beginPlay()
+			local ok, err = pcall(Round.beginPlay)
+			if not ok then
+				warn("[Highrise] beginPlay failed: ", err)
+				phase = "Round"
+				deadline = os.clock() + Config.RoundSeconds
+				pushState()
+			end
 		else
 			deadline = os.clock() + Config.LobbySeconds
 			pushState()
 		end
+	elseif phase == "Reveal" then
+		phase = "Round"
+		deadline = os.clock() + Config.RoundSeconds
+		for _, actor in ipairs(allActors()) do
+			setSpeed(actor)
+		end
+		Bots.startBrain(Round.getRole, Round.attack, Round.attack)
+		pushState()
 	elseif phase == "Round" then
 		Round.endRound("Innocents")
 	elseif phase == "Over" then
@@ -724,17 +721,11 @@ function Round.start()
 		Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
 	end)
 
-	-- Lobby first so the first state the client gets is a live countdown, not 0:00.
 	Round.lobby()
 	task.spawn(function()
-		local acc = 0
 		while true do
-			Round.tick()
-			acc += 0.25
-			if acc >= 1 then
-				acc = 0
-				pushState()
-			end
+			pcall(Round.tick)
+			pushState()
 			task.wait(0.25)
 		end
 	end)

@@ -4,12 +4,15 @@ do
 	if not p then
 		p = Instance.new("Part")
 		p.Name = "HR_CATCH"
-		p.Anchored = true
-		p.Size = Vector3.new(80, 4, 80)
-		p.CFrame = CFrame.new(0, 0, 0)
-		p.Material = Enum.Material.Wood
-		p.Color = Color3.fromRGB(72, 48, 32)
 		p.Parent = workspace
+	end
+	if p:IsA("BasePart") then
+		p.Anchored = true
+		p.Size = Vector3.new(280, 8, 300)
+		p.CFrame = CFrame.new(0, 0, 40)
+		p.Material = Enum.Material.Slate
+		p.Color = Color3.fromRGB(48, 44, 40)
+		p.CanCollide = true
 	end
 end
 
@@ -71,33 +74,51 @@ local function putOnFloor(char: Model)
 	end
 end
 
+local function hookWorldPrompts()
+	local map = workspace:FindFirstChild("Highrise")
+	if not map then
+		return
+	end
+	local clerk = map:FindFirstChild("ShopClerk")
+	local shopPrompt = clerk and clerk:FindFirstChild("OpenShop")
+	if shopPrompt and shopPrompt:IsA("ProximityPrompt") and not shopPrompt:GetAttribute("Hooked") then
+		shopPrompt:SetAttribute("Hooked", true)
+		shopPrompt.Triggered:Connect(function(plr)
+			Remotes.get("OpenShop"):FireClient(plr)
+		end)
+	end
+	for _, t in ipairs(World.tasks()) do
+		local prompt = t:FindFirstChildOfClass("ProximityPrompt")
+		if prompt and not prompt:GetAttribute("Hooked") then
+			prompt:SetAttribute("Hooked", true)
+			prompt.Triggered:Connect(function(plr)
+				Round.doTask(plr, t)
+			end)
+		end
+	end
+end
+
 sinkDefaults()
+hookWorldPrompts()
 
 task.spawn(function()
 	while true do
 		if not workspace:FindFirstChild("Highrise") then
 			pcall(World.build)
 		end
-		if not workspace:FindFirstChild("HR_CATCH") then
+		local catch = workspace:FindFirstChild("HR_CATCH")
+		if not (catch and catch:IsA("BasePart")) then
 			local p = Instance.new("Part")
 			p.Name = "HR_CATCH"
 			p.Anchored = true
-			p.Size = Vector3.new(80, 4, 80)
-			p.CFrame = CFrame.new(0, 0, 0)
-			p.Material = Enum.Material.Wood
-			p.Color = Color3.fromRGB(72, 48, 32)
+			p.Size = Vector3.new(280, 8, 300)
+			p.CFrame = CFrame.new(0, 0, 40)
+			p.Material = Enum.Material.Slate
+			p.Color = Color3.fromRGB(48, 44, 40)
 			p.Parent = workspace
 		end
 		sinkDefaults()
-		local map = workspace:FindFirstChild("Highrise")
-		local clerk = map and map:FindFirstChild("ShopClerk")
-		local prompt = clerk and clerk:FindFirstChild("OpenShop")
-		if prompt and prompt:IsA("ProximityPrompt") and not prompt:GetAttribute("Hooked") then
-			prompt:SetAttribute("Hooked", true)
-			prompt.Triggered:Connect(function(plr)
-				Remotes.get("OpenShop"):FireClient(plr)
-			end)
-		end
+		hookWorldPrompts()
 		for _, plr in ipairs(Players:GetPlayers()) do
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -105,7 +126,7 @@ task.spawn(function()
 				putOnFloor(char)
 			end
 		end
-		task.wait(0.2)
+		task.wait(0.25)
 	end
 end)
 

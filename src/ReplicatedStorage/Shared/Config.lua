@@ -3,7 +3,7 @@ local Config = {
 	Title = "Highrise",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 20,
+	LobbySeconds = 12,
 	RevealSeconds = 5,
 	RoundSeconds = 120,
 	GraceSeconds = 8,

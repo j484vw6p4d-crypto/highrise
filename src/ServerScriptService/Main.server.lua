@@ -39,29 +39,7 @@ end
 wipeDefaults()
 
 World.applyLighting()
-local ok, err = pcall(function()
-	World.build()
-end)
-if not ok then
-	warn("[Highrise] World.build failed: ", err)
-	World.ensureShell()
-end
-wipeDefaults()
-
-local spawn = workspace:FindFirstChild("LobbySpawn")
-if not (spawn and spawn:IsA("SpawnLocation")) then
-	local s = Instance.new("SpawnLocation")
-	s.Name = "LobbySpawn"
-	s.Size = Vector3.new(12, 1, 12)
-	s.CFrame = CFrame.new(0, 2, 0)
-	s.Anchored = true
-	s.Transparency = 1
-	s.CanCollide = true
-	s.Neutral = true
-	s.Duration = 0
-	s.Parent = workspace
-	spawn = s
-end
+World.build()
 
 StarterPlayer.CameraMaxZoomDistance = 22
 StarterPlayer.CameraMinZoomDistance = 8

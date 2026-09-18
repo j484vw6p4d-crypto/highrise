@@ -723,8 +723,10 @@ function Round.start()
 		pushState(nil, player)
 		Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
 	end)
+
+	-- Lobby first so the first state the client gets is a live countdown, not 0:00.
+	Round.lobby()
 	task.spawn(function()
-		Round.lobby()
 		local acc = 0
 		while true do
 			Round.tick()

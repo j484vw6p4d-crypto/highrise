@@ -534,4 +534,11 @@ end)
 
 task.defer(function()
 	Remotes.get("RequestState"):FireServer()
+	local cam = workspace.CurrentCamera
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart", 8)
+	if cam and hrp then
+		cam.CameraType = Enum.CameraType.Custom
+		cam.CFrame = CFrame.lookAt(hrp.Position + Vector3.new(0, 6, 14), hrp.Position + Vector3.new(0, 2, -8))
+	end
 end)

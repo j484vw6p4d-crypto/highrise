@@ -20,6 +20,9 @@ local waypoints: { Vector3 } = {}
 local spawns: { Vector3 } = {}
 local tasks: { BasePart } = {}
 
+-- Floor height. Keep near default Studio spawn so Play Solo never drops into the void.
+local Y = 0
+
 local function part(props: { [string]: any }): BasePart
 	local p = Instance.new("Part")
 	p.Anchored = true
@@ -38,7 +41,7 @@ local function light(parent: BasePart, color: Color3, brightness: number, range:
 	l.Color = color
 	l.Brightness = brightness
 	l.Range = range
-	l.Shadows = true
+	l.Shadows = false
 	l.Parent = parent
 end
 
@@ -58,25 +61,29 @@ function World.tasks(): { BasePart }
 	return tasks
 end
 
+function World.floorY(): number
+	return Y
+end
+
 function World.applyLighting()
-	Lighting.ClockTime = 0.15
-	Lighting.Brightness = 1.15
-	Lighting.Ambient = Color3.fromRGB(16, 14, 24)
-	Lighting.OutdoorAmbient = Color3.fromRGB(10, 12, 28)
-	Lighting.ColorShift_Top = Color3.fromRGB(90, 70, 50)
-	Lighting.ColorShift_Bottom = Color3.fromRGB(20, 24, 48)
-	Lighting.FogColor = Color3.fromRGB(6, 8, 18)
-	Lighting.FogStart = 60
-	Lighting.FogEnd = 520
+	Lighting.ClockTime = 20.4
+	Lighting.Brightness = 3
+	Lighting.Ambient = Color3.fromRGB(92, 84, 98)
+	Lighting.OutdoorAmbient = Color3.fromRGB(62, 68, 96)
+	Lighting.ColorShift_Top = Color3.fromRGB(255, 196, 140)
+	Lighting.ColorShift_Bottom = Color3.fromRGB(48, 56, 96)
+	Lighting.FogColor = Color3.fromRGB(24, 26, 44)
+	Lighting.FogStart = 180
+	Lighting.FogEnd = 900
 	Lighting.GlobalShadows = true
-	Lighting.ShadowSoftness = 0.18
-	Lighting.EnvironmentDiffuseScale = 0.35
-	Lighting.EnvironmentSpecularScale = 1
+	Lighting.ShadowSoftness = 0.45
+	Lighting.EnvironmentDiffuseScale = 1
+	Lighting.EnvironmentSpecularScale = 0.55
 	pcall(function()
-		Lighting.Technology = Enum.Technology.Future
+		Lighting.Technology = Enum.Technology.ShadowMap
 	end)
 
-	for _, n in ipairs({ "Atmosphere", "ColorCorrection", "Bloom", "DepthOfField", "Sky" }) do
+	for _, n in ipairs({ "Atmosphere", "ColorCorrection", "Bloom", "DepthOfField", "Sky", "SunRaysEffect" }) do
 		local old = Lighting:FindFirstChild(n)
 		if old then
 			old:Destroy()
@@ -84,44 +91,33 @@ function World.applyLighting()
 	end
 
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.32
-	atm.Offset = 0.1
-	atm.Color = Color3.fromRGB(28, 26, 44)
-	atm.Decay = Color3.fromRGB(8, 8, 16)
-	atm.Glare = 0.12
-	atm.Haze = 1.6
+	atm.Density = 0.06
+	atm.Offset = 0.28
+	atm.Color = Color3.fromRGB(110, 104, 128)
+	atm.Decay = Color3.fromRGB(48, 44, 70)
+	atm.Glare = 0.22
+	atm.Haze = 0.22
 	atm.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Contrast = 0.12
+	cc.Brightness = 0.06
+	cc.Contrast = 0.05
 	cc.Saturation = 0.08
-	cc.TintColor = Color3.fromRGB(255, 236, 220)
+	cc.TintColor = Color3.fromRGB(255, 244, 232)
 	cc.Parent = Lighting
 
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.55
-	bloom.Size = 22
-	bloom.Threshold = 0.85
+	bloom.Intensity = 0.22
+	bloom.Size = 18
+	bloom.Threshold = 1.15
 	bloom.Parent = Lighting
 
-	local dof = Instance.new("DepthOfFieldEffect")
-	dof.FarIntensity = 0.18
-	dof.FocusDistance = 40
-	dof.InFocusRadius = 50
-	dof.NearIntensity = 0.05
-	dof.Parent = Lighting
-
+	-- Keep the default sky textures. Blank skybox IDs render as a black void.
 	local sky = Instance.new("Sky")
 	sky.CelestialBodiesShown = true
-	sky.StarCount = 3000
-	sky.SunAngularSize = 0
-	sky.MoonAngularSize = 14
-	sky.SkyboxBk = ""
-	sky.SkyboxDn = ""
-	sky.SkyboxFt = ""
-	sky.SkyboxLf = ""
-	sky.SkyboxRt = ""
-	sky.SkyboxUp = ""
+	sky.StarCount = 2500
+	sky.SunAngularSize = 8
+	sky.MoonAngularSize = 12
 	sky.Parent = Lighting
 end
 
@@ -135,7 +131,7 @@ local function makeTask(name: string, pos: Vector3, color: Color3)
 		Shape = Enum.PartType.Cylinder,
 	})
 	t.Orientation = Vector3.new(0, 0, 90)
-	light(t, color, 1.4, 10)
+	light(t, color, 2, 14)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Complete"
 	prompt.ObjectText = name
@@ -162,8 +158,8 @@ local function chandelier(pos: Vector3)
 		Transparency = 0.15,
 		Shape = Enum.PartType.Ball,
 	})
-	light(bowl, Color3.fromRGB(255, 214, 160), 3.2, 28)
-	light(stem, Color3.fromRGB(255, 200, 140), 1.2, 16)
+	light(bowl, Color3.fromRGB(255, 220, 170), 6, 42)
+	light(stem, Color3.fromRGB(255, 200, 140), 2, 20)
 end
 
 local function column(x: number, z: number, y: number, h: number)
@@ -185,7 +181,7 @@ local function city()
 	local rng = Random.new(80)
 	for i = 1, 48 do
 		local a = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(90, 260)
+		local r = rng:NextNumber(130, 280)
 		local h = rng:NextNumber(40, 170)
 		local w = rng:NextNumber(10, 22)
 		local d = rng:NextNumber(10, 22)
@@ -206,7 +202,7 @@ local function city()
 				Color = if i % 6 == 0 then gold else neon,
 				CanCollide = false,
 			})
-			light(band, band.Color, 2, 40)
+			light(band, band.Color, 2.4, 48)
 		end
 		tower.CastShadow = false
 	end
@@ -224,12 +220,11 @@ function World.build()
 	spawns = {}
 	tasks = {}
 
-	local Y = 180
 	-- Floor
 	part({
 		Name = "Floor",
-		Size = Vector3.new(148, 2, 112),
-		Position = Vector3.new(0, Y, 0),
+		Size = Vector3.new(148, 2, 140),
+		Position = Vector3.new(0, Y, -14),
 		Material = Enum.Material.Marble,
 		Color = marble,
 	})
@@ -241,12 +236,20 @@ function World.build()
 		Color = carpet,
 	})
 	-- Ceiling
-	part({
+	local ceiling = part({
+		Name = "Ceiling",
 		Size = Vector3.new(148, 1.5, 112),
 		Position = Vector3.new(0, Y + 22, 0),
 		Material = Enum.Material.SmoothPlastic,
 		Color = ink,
 	})
+	local downLight = Instance.new("SurfaceLight")
+	downLight.Face = Enum.NormalId.Bottom
+	downLight.Brightness = 2.4
+	downLight.Range = 48
+	downLight.Angle = 90
+	downLight.Color = Color3.fromRGB(255, 226, 190)
+	downLight.Parent = ceiling
 
 	-- Outer walls
 	local walls = {
@@ -291,6 +294,29 @@ function World.build()
 	chandelier(Vector3.new(-40, Y + 16, -16))
 	chandelier(Vector3.new(40, Y + 16, -16))
 	chandelier(Vector3.new(0, Y + 16, 28))
+	chandelier(Vector3.new(0, Y + 16, -40))
+
+	-- Ceiling neon strips so the hall is never dark
+	for z = -40, 32, 18 do
+		local strip = part({
+			Size = Vector3.new(90, 0.2, 0.6),
+			Position = Vector3.new(0, Y + 21.1, z),
+			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(255, 214, 160),
+			CastShadow = false,
+		})
+		light(strip, Color3.fromRGB(255, 220, 170), 2.2, 28)
+	end
+
+	local fill = part({
+		Name = "FillLight",
+		Size = Vector3.new(1, 1, 1),
+		Position = Vector3.new(0, Y + 14, 0),
+		Transparency = 1,
+		CanCollide = false,
+		CastShadow = false,
+	})
+	light(fill, Color3.fromRGB(255, 230, 200), 3.5, 90)
 
 	-- Brass trim along floor
 	for _, z in ipairs({ -54, 54 }) do
@@ -319,7 +345,7 @@ function World.build()
 		Transparency = 0.35,
 		Reflectance = 0.4,
 	})
-	light(pool, Color3.fromRGB(70, 140, 180), 2.4, 24)
+	light(pool, Color3.fromRGB(70, 140, 180), 3, 28)
 	part({
 		Size = Vector3.new(38, 1.6, 1),
 		Position = Vector3.new(0, Y + 1.2, 65.5),
@@ -441,7 +467,7 @@ function World.build()
 			Position = Vector3.new(i * 12, Y + 14, -53.6),
 			Material = Enum.Material.Neon,
 			Color = gold,
-		}), gold, 2, 8)
+		}), gold, 2.4, 12)
 	end
 
 	-- Helipad accent
@@ -467,7 +493,7 @@ function World.build()
 		Color = gold,
 		CanCollide = false,
 	})
-	light(sign, gold, 2.5, 30)
+	light(sign, gold, 3.2, 36)
 
 	makeTask("Guest book", Vector3.new(-40, Y + 1.6, -16), brass)
 	makeTask("Wine cellar", Vector3.new(48, Y + 1.6, -22), wine)
@@ -500,24 +526,35 @@ function World.build()
 
 	city()
 
-	-- Lobby spawn far south (pre-round)
+	-- Lobby connected to the south hall (no gap, no void)
 	part({
 		Name = "LobbyFloor",
-		Size = Vector3.new(40, 2, 28),
-		Position = Vector3.new(0, Y, -78),
+		Size = Vector3.new(48, 2, 48),
+		Position = Vector3.new(0, Y, -72),
 		Material = Enum.Material.Marble,
 		Color = marble,
 	})
 	part({
-		Size = Vector3.new(40, 12, 2),
-		Position = Vector3.new(0, Y + 7, -91),
+		Size = Vector3.new(48, 12, 2),
+		Position = Vector3.new(0, Y + 7, -95),
 		Material = Enum.Material.Marble,
 		Color = ivory,
 	})
-	chandelier(Vector3.new(0, Y + 14, -78))
-	World.LobbySpawn = Vector3.new(0, Y + 5, -78)
+	chandelier(Vector3.new(0, Y + 14, -72))
+
+	-- Void catcher under the whole map
+	part({
+		Name = "Catch",
+		Size = Vector3.new(500, 4, 500),
+		Position = Vector3.new(0, Y - 24, 0),
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(10, 12, 18),
+		CastShadow = false,
+	})
+
+	World.LobbySpawn = Vector3.new(0, Y + 5, 0)
 end
 
-World.LobbySpawn = Vector3.new(0, 185, -78)
+World.LobbySpawn = Vector3.new(0, 5, 0)
 
 return World

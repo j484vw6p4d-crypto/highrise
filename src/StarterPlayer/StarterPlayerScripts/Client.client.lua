@@ -19,13 +19,14 @@ end)
 local state = {
 	phase = "Lobby",
 	role = "Innocent",
-	endsAt = 0,
+	remaining = Config.LobbySeconds,
 	winner = nil :: string?,
 	coins = 0,
 	owned = {} :: { string },
 	equipped = Shop.defaults(),
 	passes = {} :: { [string]: boolean },
 }
+local lastSync = os.clock()
 
 local function owns(id: string): boolean
 	for _, x in ipairs(state.owned) do
@@ -42,6 +43,24 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = playerGui
+
+local function attachFill(char: Model)
+	local hrp = char:WaitForChild("HumanoidRootPart", 8)
+	if not hrp or hrp:FindFirstChild("HighriseFill") then
+		return
+	end
+	local l = Instance.new("PointLight")
+	l.Name = "HighriseFill"
+	l.Brightness = 1.4
+	l.Range = 30
+	l.Color = Color3.fromRGB(255, 226, 190)
+	l.Shadows = false
+	l.Parent = hrp
+end
+player.CharacterAdded:Connect(attachFill)
+if player.Character then
+	task.spawn(attachFill, player.Character)
+end
 
 local function mk(className: string, props: { [string]: any }, parent: Instance?): Instance
 	local i = Instance.new(className)
@@ -337,7 +356,10 @@ Remotes.get("RoundState").OnClientEvent:Connect(function(payload)
 		return
 	end
 	state.phase = payload.phase or state.phase
-	state.endsAt = payload.endsAt or state.endsAt
+	if typeof(payload.remaining) == "number" then
+		state.remaining = payload.remaining
+		lastSync = os.clock()
+	end
 	state.winner = payload.winner
 	phaseLab.Text = string.upper(state.phase)
 	if state.phase == "Over" and payload.winner then
@@ -421,26 +443,27 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
--- Task prompts fire from World; also listen so HUD can ping
-for _, t in ipairs(workspace:WaitForChild("Highrise"):GetChildren()) do
-	if string.sub(t.Name, 1, 5) == "Task_" then
-		local prompt = t:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
+-- Task prompts. Never block the HUD/timer on this.
+task.spawn(function()
+	local folder = workspace:WaitForChild("Highrise", 30)
+	if not folder then
+		return
+	end
+	local function bind(t: Instance)
+		if string.sub(t.Name, 1, 5) ~= "Task_" then
+			return
+		end
+		local prompt = t:FindFirstChildOfClass("ProximityPrompt") or t:WaitForChild("ProximityPrompt", 2)
+		if prompt and prompt:IsA("ProximityPrompt") then
 			prompt.Triggered:Connect(function()
 				Remotes.get("TaskDo"):FireServer(t.Name)
 			end)
 		end
 	end
-end
-workspace:WaitForChild("Highrise").ChildAdded:Connect(function(ch)
-	if string.sub(ch.Name, 1, 5) == "Task_" then
-		local prompt = ch:WaitForChild("ProximityPrompt", 2)
-		if prompt and prompt:IsA("ProximityPrompt") then
-			prompt.Triggered:Connect(function()
-				Remotes.get("TaskDo"):FireServer(ch.Name)
-			end)
-		end
+	for _, t in ipairs(folder:GetChildren()) do
+		bind(t)
 	end
+	folder.ChildAdded:Connect(bind)
 end)
 
 -- Mobile attack button
@@ -460,9 +483,13 @@ if UIS.TouchEnabled then
 end
 
 RunService.RenderStepped:Connect(function()
-	local left = math.max(0, math.floor((state.endsAt - workspace:GetServerTimeNow()) + 0.5))
+	local left = math.max(0, math.floor(state.remaining - (os.clock() - lastSync) + 0.5))
 	local m = math.floor(left / 60)
 	local s = left % 60
 	timerLab.Text = string.format("%d:%02d", m, s)
 	title.Text = if state.phase == "Round" then string.upper(state.role) else "HIGHRISE"
+end)
+
+task.defer(function()
+	Remotes.get("RequestState"):FireServer()
 end)

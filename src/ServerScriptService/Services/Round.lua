@@ -15,7 +15,7 @@ type Actor = Player | Model
 local Round = {}
 
 local phase = "Lobby"
-local endsAt = 0
+local deadline = 0
 local roles: { [string]: string } = {}
 local alive: { [string]: boolean } = {}
 local gunReady: { [string]: boolean } = {}
@@ -78,10 +78,15 @@ local function allActors(): { Actor }
 	return list
 end
 
-local function pushState(extra: { [string]: any }?)
+local function remaining(): number
+	return math.max(0, math.ceil(deadline - os.clock()))
+end
+
+local function pushState(extra: { [string]: any }?, toPlayer: Player?)
 	local payload = {
 		phase = phase,
-		endsAt = endsAt,
+		remaining = remaining(),
+		endsAt = os.time() + remaining(),
 		alive = alive,
 		rolesHidden = phase ~= "Reveal" and phase ~= "Round" and phase ~= "Over",
 		title = Config.Title,
@@ -90,6 +95,12 @@ local function pushState(extra: { [string]: any }?)
 		for k, v in extra do
 			payload[k] = v
 		end
+	end
+	if toPlayer then
+		Remotes.get("RoundState"):FireClient(toPlayer, payload)
+		local k = keyOf(toPlayer)
+		Remotes.get("RoleReveal"):FireClient(toPlayer, roles[k], phase)
+		return
 	end
 	Remotes.get("RoundState"):FireAllClients(payload)
 	for _, p in ipairs(Players:GetPlayers()) do
@@ -265,7 +276,7 @@ function Round.endRound(winner: string)
 		return
 	end
 	phase = "Over"
-	endsAt = workspace:GetServerTimeNow() + 8
+	deadline = os.clock() + 8
 	Bots.stop()
 	for k, on in pairs(alive) do
 		local actor = actorFromKey(k)
@@ -329,7 +340,7 @@ function Round.attack(attacker: Actor, targetHint: any)
 	if not ahrp then
 		return
 	end
-	local now = workspace:GetServerTimeNow()
+	local now = os.clock()
 
 	local function nearestVictim(maxRange: number, needLook: boolean): Actor?
 		local best: Actor? = nil
@@ -457,7 +468,7 @@ end
 
 function Round.beginPlay()
 	phase = "Reveal"
-	endsAt = workspace:GetServerTimeNow() + Config.RevealSeconds
+	deadline = os.clock() + Config.RevealSeconds
 	Round.assignRoles()
 	local spawns = World.spawns()
 	local i = 1
@@ -482,7 +493,7 @@ function Round.beginPlay()
 			return
 		end
 		phase = "Round"
-		endsAt = workspace:GetServerTimeNow() + Config.RoundSeconds
+		deadline = os.clock() + Config.RoundSeconds
 		for _, actor in ipairs(allActors()) do
 			setSpeed(actor)
 		end
@@ -493,10 +504,13 @@ end
 
 function Round.lobby()
 	phase = "Lobby"
-	endsAt = workspace:GetServerTimeNow() + Config.LobbySeconds
+	deadline = os.clock() + Config.LobbySeconds
 	Bots.stop()
+	pushState()
 	local need = math.max(0, Config.BotFillTo - #Players:GetPlayers())
-	Bots.spawn(need)
+	pcall(function()
+		Bots.spawn(need)
+	end)
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p.Character then
 			teleport(p, World.LobbySpawn)
@@ -506,45 +520,67 @@ function Round.lobby()
 		end
 	end
 	pushState()
+	print("[Highrise] Lobby. remaining=", remaining(), "players=", #Players:GetPlayers(), "bots=", #Bots.list())
+end
+
+function Round.rescue()
+	local minY = World.floorY() - 8
+	for _, p in ipairs(Players:GetPlayers()) do
+		local hrp = hrpOf(p)
+		if hrp and hrp.Position.Y < minY then
+			teleport(p, World.LobbySpawn)
+		end
+	end
 end
 
 function Round.tick()
-	local now = workspace:GetServerTimeNow()
-	if now < endsAt then
+	Round.rescue()
+	if os.clock() < deadline then
 		return
 	end
 	if phase == "Lobby" then
 		if #allActors() >= Config.MinPlayersToStart then
 			Round.beginPlay()
 		else
-			endsAt = now + Config.LobbySeconds
+			deadline = os.clock() + Config.LobbySeconds
 			pushState()
 		end
 	elseif phase == "Round" then
 		Round.endRound("Innocents")
-	elseif phase == "Over" or phase == "Reveal" then
-		if phase == "Over" then
-			Round.lobby()
-		end
+	elseif phase == "Over" then
+		Round.lobby()
 	end
 end
 
 function Round.start()
-	Players.PlayerAdded:Connect(function(player)
+	local function onCharacter(player: Player)
+		task.wait(0.15)
+		if phase == "Lobby" or phase == "Over" or phase == "Reveal" then
+			teleport(player, World.LobbySpawn)
+		else
+			alive[keyOf(player)] = false
+			roles[keyOf(player)] = "Innocent"
+		end
+		applySuit(player)
+		setSpeed(player)
+		Monetization.applyNametag(player)
+		pushState(nil, player)
+	end
+
+	local function hookPlayer(player: Player)
 		player.CharacterAdded:Connect(function()
-			task.wait(0.2)
-			if phase == "Lobby" or phase == "Over" then
-				teleport(player, World.LobbySpawn)
-			else
-				-- late join spectates
-				alive[keyOf(player)] = false
-				roles[keyOf(player)] = "Innocent"
-			end
-			applySuit(player)
-			setSpeed(player)
-			Monetization.applyNametag(player)
+			onCharacter(player)
 		end)
-	end)
+		if player.Character then
+			task.spawn(onCharacter, player)
+		end
+	end
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		hookPlayer(p)
+	end
+	Players.PlayerAdded:Connect(hookPlayer)
+
 	Remotes.get("Attack").OnServerEvent:Connect(function(player)
 		Round.attack(player)
 	end)
@@ -562,10 +598,20 @@ function Round.start()
 	Remotes.get("PickupGun").OnServerEvent:Connect(function(player)
 		Round.pickupGun(player)
 	end)
+	Remotes.get("RequestState").OnServerEvent:Connect(function(player)
+		pushState(nil, player)
+		Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
+	end)
 	task.spawn(function()
 		Round.lobby()
+		local acc = 0
 		while true do
 			Round.tick()
+			acc += 0.25
+			if acc >= 1 then
+				acc = 0
+				pushState()
+			end
 			task.wait(0.25)
 		end
 	end)

@@ -15,7 +15,10 @@ export type Profile = {
 
 local Data = {}
 local cache: { [number]: Profile } = {}
-local store = DataStoreService:GetDataStore(Config.DataStoreName)
+local store: DataStore? = nil
+pcall(function()
+	store = DataStoreService:GetDataStore(Config.DataStoreName)
+end)
 
 local function fresh(): Profile
 	local eq = Shop.defaults()
@@ -52,9 +55,12 @@ end
 
 function Data.load(player: Player)
 	local key = Config.DataStoreKey .. player.UserId
-	local ok, data = pcall(function()
-		return store:GetAsync(key)
-	end)
+	local ok, data = false, nil
+	if store then
+		ok, data = pcall(function()
+			return store:GetAsync(key)
+		end)
+	end
 	local p: Profile = fresh()
 	if ok and typeof(data) == "table" then
 		p.coins = data.coins or 0
@@ -70,7 +76,7 @@ end
 
 function Data.save(player: Player)
 	local p = cache[player.UserId]
-	if not p then
+	if not p or not store then
 		return
 	end
 	local key = Config.DataStoreKey .. player.UserId

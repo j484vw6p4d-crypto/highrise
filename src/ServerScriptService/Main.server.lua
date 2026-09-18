@@ -17,27 +17,34 @@ local function pushProfile(player: Player)
 	Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
 end
 
-Players.PlayerAdded:Connect(function(player)
+local function setupPlayer(player: Player)
 	Data.load(player)
-	local ls = Instance.new("Folder")
-	ls.Name = "leaderstats"
-	ls.Parent = player
-	local coins = Instance.new("IntValue")
-	coins.Name = "Coins"
-	coins.Value = Data.get(player.UserId).coins
-	coins.Parent = ls
-	local wins = Instance.new("IntValue")
-	wins.Name = "Wins"
-	wins.Value = Data.get(player.UserId).wins
-	wins.Parent = ls
-	player:GetAttributeChangedSignal("Coins"):Connect(function()
-		coins.Value = player:GetAttribute("Coins") or 0
-	end)
-	player:GetAttributeChangedSignal("Wins"):Connect(function()
-		wins.Value = player:GetAttribute("Wins") or 0
-	end)
+	if not player:FindFirstChild("leaderstats") then
+		local ls = Instance.new("Folder")
+		ls.Name = "leaderstats"
+		ls.Parent = player
+		local coins = Instance.new("IntValue")
+		coins.Name = "Coins"
+		coins.Value = Data.get(player.UserId).coins
+		coins.Parent = ls
+		local wins = Instance.new("IntValue")
+		wins.Name = "Wins"
+		wins.Value = Data.get(player.UserId).wins
+		wins.Parent = ls
+		player:GetAttributeChangedSignal("Coins"):Connect(function()
+			coins.Value = player:GetAttribute("Coins") or 0
+		end)
+		player:GetAttributeChangedSignal("Wins"):Connect(function()
+			wins.Value = player:GetAttribute("Wins") or 0
+		end)
+	end
 	pushProfile(player)
-end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+	task.spawn(setupPlayer, p)
+end
+Players.PlayerAdded:Connect(setupPlayer)
 
 Remotes.get("ShopBuy").OnServerEvent:Connect(function(player, id)
 	if typeof(id) ~= "string" then

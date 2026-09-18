@@ -1,5 +1,4 @@
 --!strict
-local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 
 local World = require(script.Parent.World)
@@ -20,9 +19,61 @@ local COLORS = {
 local function randomWp(): Vector3
 	local w = World.waypoints()
 	if #w == 0 then
-		return Vector3.new(0, 185, 0)
+		return World.LobbySpawn
 	end
 	return w[math.random(1, #w)]
+end
+
+local function limb(model: Model, name: string, size: Vector3, cf: CFrame, color: Color3): BasePart
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = Enum.Material.SmoothPlastic
+	p.Anchored = false
+	p.CanCollide = name == "Torso" or name == "HumanoidRootPart"
+	p.Parent = model
+	return p
+end
+
+local function weld(a: BasePart, b: BasePart, c0: CFrame)
+	local w = Instance.new("Weld")
+	w.Part0 = a
+	w.Part1 = b
+	w.C0 = c0
+	w.Parent = a
+end
+
+local function makeDummy(name: string, bodyColor: Color3, pos: Vector3): Model
+	local model = Instance.new("Model")
+	model.Name = name
+	local cf = CFrame.new(pos)
+	local hrp = limb(model, "HumanoidRootPart", Vector3.new(2, 2, 1), cf, bodyColor)
+	hrp.Transparency = 1
+	local torso = limb(model, "Torso", Vector3.new(2, 2, 1), cf, bodyColor)
+	local head = limb(model, "Head", Vector3.new(1.2, 1.2, 1.2), cf * CFrame.new(0, 1.6, 0), Color3.fromRGB(230, 210, 190))
+	local la = limb(model, "Left Arm", Vector3.new(1, 2, 1), cf * CFrame.new(-1.5, 0, 0), Color3.fromRGB(230, 210, 190))
+	local ra = limb(model, "Right Arm", Vector3.new(1, 2, 1), cf * CFrame.new(1.5, 0, 0), Color3.fromRGB(230, 210, 190))
+	local ll = limb(model, "Left Leg", Vector3.new(1, 2, 1), cf * CFrame.new(-0.5, -2, 0), Color3.fromRGB(20, 20, 24))
+	local rl = limb(model, "Right Leg", Vector3.new(1, 2, 1), cf * CFrame.new(0.5, -2, 0), Color3.fromRGB(20, 20, 24))
+	weld(hrp, torso, CFrame.new())
+	weld(hrp, head, CFrame.new(0, 1.6, 0))
+	weld(hrp, la, CFrame.new(-1.5, 0, 0))
+	weld(hrp, ra, CFrame.new(1.5, 0, 0))
+	weld(hrp, ll, CFrame.new(-0.5, -2, 0))
+	weld(hrp, rl, CFrame.new(0.5, -2, 0))
+	local hum = Instance.new("Humanoid")
+	hum.RigType = Enum.HumanoidRigType.R6
+	hum.MaxHealth = 100
+	hum.Health = 100
+	hum.WalkSpeed = 14
+	hum.JumpPower = 0
+	hum.HipHeight = 2
+	hum.DisplayName = name
+	hum.Parent = model
+	model.PrimaryPart = hrp
+	return model
 end
 
 function Bots.clear()
@@ -40,42 +91,15 @@ end
 
 function Bots.spawn(count: number)
 	Bots.clear()
+	local parent = workspace:FindFirstChild("Highrise") or workspace
 	for i = 1, count do
-		local desc = Instance.new("HumanoidDescription")
-		desc.TorsoColor = COLORS[((i - 1) % #COLORS) + 1]
-		desc.HeadColor = Color3.fromRGB(230, 210, 190)
-		desc.LeftArmColor = desc.HeadColor
-		desc.RightArmColor = desc.HeadColor
-		desc.LeftLegColor = Color3.fromRGB(20, 20, 24)
-		desc.RightLegColor = Color3.fromRGB(20, 20, 24)
-		desc.Shirt = 0
-		local ok, model = pcall(function()
-			return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
-		end)
-		if not ok or not model then
-			model = Instance.new("Model")
-			local hrp = Instance.new("Part")
-			hrp.Name = "HumanoidRootPart"
-			hrp.Size = Vector3.new(2, 2, 1)
-			hrp.Anchored = false
-			hrp.Parent = model
-			local hum = Instance.new("Humanoid")
-			hum.Parent = model
-			model.PrimaryPart = hrp
-		end
-		model.Name = "Guest " .. NAMES[((i - 1) % #NAMES) + 1]
+		local color = COLORS[((i - 1) % #COLORS) + 1]
+		local spawns = World.spawns()
+		local pos = if #spawns > 0 then spawns[((i - 1) % #spawns) + 1] else World.LobbySpawn
+		local model = makeDummy("Guest " .. NAMES[((i - 1) % #NAMES) + 1], color, pos)
 		model:SetAttribute("IsBot", true)
 		model:SetAttribute("BotIndex", i)
-		local spawns = World.spawns()
-		local pos = if #spawns > 0 then spawns[((i - 1) % #spawns) + 1] else Vector3.new(0, 185, 0)
-		model:PivotTo(CFrame.new(pos))
-		model.Parent = workspace:FindFirstChild("Highrise") or workspace
-		local hum = model:FindFirstChildOfClass("Humanoid")
-		if hum then
-			hum.DisplayName = model.Name
-			hum.WalkSpeed = 14
-			hum.JumpPower = 0
-		end
+		model.Parent = parent
 		table.insert(models, model)
 	end
 end

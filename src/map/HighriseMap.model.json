@@ -1,0 +1,90 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "HR_Floor",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [140, 2, 110],
+        "Position": [0, 1, 0],
+        "Color": [0.93, 0.92, 0.88],
+        "Material": "Marble"
+      }
+    },
+    {
+      "Name": "HR_Ceiling",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [140, 2, 110],
+        "Position": [0, 21, 0],
+        "Color": [0.08, 0.07, 0.08],
+        "Material": "SmoothPlastic"
+      }
+    },
+    {
+      "Name": "HR_WallS",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [140, 20, 3],
+        "Position": [0, 11, -55],
+        "Color": [0.91, 0.89, 0.84],
+        "Material": "Marble"
+      }
+    },
+    {
+      "Name": "HR_WallN",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [140, 20, 2],
+        "Position": [0, 11, 54],
+        "Color": [0.59, 0.7, 0.78],
+        "Material": "Glass",
+        "Transparency": 0.35
+      }
+    },
+    {
+      "Name": "HR_WallE",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [3, 20, 110],
+        "Position": [70, 11, 0],
+        "Color": [0.91, 0.89, 0.84],
+        "Material": "Marble"
+      }
+    },
+    {
+      "Name": "HR_WallW",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [3, 20, 110],
+        "Position": [-70, 11, 0],
+        "Color": [0.91, 0.89, 0.84],
+        "Material": "Marble"
+      }
+    },
+    {
+      "Name": "HR_Sign",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "Size": [30, 4, 1],
+        "Position": [0, 16, 52],
+        "Color": [0.83, 0.69, 0.43],
+        "Material": "Neon"
+      }
+    }
+  ]
+}

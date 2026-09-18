@@ -103,9 +103,23 @@ end
 -- Marble box that exists even if the rest of build() errors.
 function World.ensureShell()
 	World.ensureGround()
+	local function findPart(name: string): BasePart?
+		local a = workspace:FindFirstChild(name)
+		if a and a:IsA("BasePart") then
+			return a
+		end
+		local m = workspace:FindFirstChild("HighriseMap")
+		if m then
+			local b = m:FindFirstChild(name)
+			if b and b:IsA("BasePart") then
+				return b
+			end
+		end
+		return nil
+	end
 	local function box(name: string, size: Vector3, pos: Vector3, color: Color3, mat: Enum.Material, trans: number?)
-		local existing = workspace:FindFirstChild(name)
-		if existing and existing:IsA("BasePart") then
+		local existing = findPart(name)
+		if existing then
 			return existing
 		end
 		return part({

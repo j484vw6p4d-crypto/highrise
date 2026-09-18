@@ -7,9 +7,9 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [140, 2, 110],
-        "Position": [0, 1, 0],
-        "Color": [0.93, 0.92, 0.88],
+        "Size": [44, 2, 44],
+        "CFrame": [0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.96, 0.93, 0.88],
         "Material": "Marble"
       }
     },
@@ -19,9 +19,9 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [140, 2, 110],
-        "Position": [0, 21, 0],
-        "Color": [0.08, 0.07, 0.08],
+        "Size": [44, 2, 44],
+        "CFrame": [0, 15, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.12, 0.1, 0.12],
         "Material": "SmoothPlastic"
       }
     },
@@ -31,9 +31,9 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [140, 20, 3],
-        "Position": [0, 11, -55],
-        "Color": [0.91, 0.89, 0.84],
+        "Size": [44, 14, 2],
+        "CFrame": [0, 8, -22, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.92, 0.89, 0.82],
         "Material": "Marble"
       }
     },
@@ -43,11 +43,10 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [140, 20, 2],
-        "Position": [0, 11, 54],
-        "Color": [0.59, 0.7, 0.78],
-        "Material": "Glass",
-        "Transparency": 0.35
+        "Size": [44, 14, 2],
+        "CFrame": [0, 8, 22, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.92, 0.89, 0.82],
+        "Material": "Marble"
       }
     },
     {
@@ -56,9 +55,9 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [3, 20, 110],
-        "Position": [70, 11, 0],
-        "Color": [0.91, 0.89, 0.84],
+        "Size": [2, 14, 44],
+        "CFrame": [22, 8, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.92, 0.89, 0.82],
         "Material": "Marble"
       }
     },
@@ -68,9 +67,9 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [3, 20, 110],
-        "Position": [-70, 11, 0],
-        "Color": [0.91, 0.89, 0.84],
+        "Size": [2, 14, 44],
+        "CFrame": [-22, 8, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.92, 0.89, 0.82],
         "Material": "Marble"
       }
     },
@@ -80,10 +79,23 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": false,
-        "Size": [30, 4, 1],
-        "Position": [0, 16, 52],
-        "Color": [0.83, 0.69, 0.43],
+        "Size": [16, 3, 0.6],
+        "CFrame": [0, 10, -20.6, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.91, 0.73, 0.38],
         "Material": "Neon"
+      }
+    },
+    {
+      "Name": "LobbySpawn",
+      "ClassName": "SpawnLocation",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "Size": [8, 1, 8],
+        "CFrame": [0, 2.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Transparency": 1,
+        "Duration": 0,
+        "Neutral": true
       }
     }
   ]

@@ -20,26 +20,49 @@ pcall(function()
 	workspace.StreamingEnabled = false
 end)
 
--- Kill the default Baseplate spawn so we are not standing on that sun pad.
+-- Floor FIRST. Never delete the Baseplate until there is something to stand on.
+World.applyLighting()
+World.build()
+
 local function wipeDefaults()
+	local kill = {}
 	for _, inst in ipairs(workspace:GetDescendants()) do
-		if inst:IsA("SpawnLocation") or inst.Name == "Baseplate" or inst.Name == "Spawn" then
-			if inst.Name ~= "LobbySpawn" then
-				inst:Destroy()
-			end
+		if inst.Name == "Baseplate" or inst.Name == "Spawn" then
+			table.insert(kill, inst)
+		elseif inst:IsA("SpawnLocation") and inst.Name ~= "LobbySpawn" then
+			table.insert(kill, inst)
 		end
 	end
-	local terrain = workspace:FindFirstChildOfClass("Terrain")
-	if terrain then
-		pcall(function()
-			terrain:Clear()
-		end)
+	for _, inst in ipairs(kill) do
+		inst:Destroy()
 	end
 end
 wipeDefaults()
 
-World.applyLighting()
-World.build()
+local function putOnFloor(char: Model)
+	local dest = CFrame.new(World.LobbySpawn)
+	pcall(function()
+		char:PivotTo(dest)
+	end)
+	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		hrp.CFrame = dest
+		hrp.AssemblyLinearVelocity = Vector3.zero
+	end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+	if p.Character then
+		putOnFloor(p.Character)
+	end
+	p.CharacterAdded:Connect(putOnFloor)
+end
+Players.PlayerAdded:Connect(function(p)
+	p.CharacterAdded:Connect(putOnFloor)
+	if p.Character then
+		putOnFloor(p.Character)
+	end
+end)
 
 StarterPlayer.CameraMaxZoomDistance = 22
 StarterPlayer.CameraMinZoomDistance = 8

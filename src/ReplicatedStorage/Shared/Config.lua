@@ -1,7 +1,7 @@
 --!strict
 local Config = {
 	Title = "Highrise",
-	BuildId = "HR-13",
+	BuildId = "HR-14",
 	Tagline = "Black-tie murder on the 80th floor.",
 
 	LobbySeconds = 20,
@@ -34,8 +34,6 @@ local Config = {
 		DoubleCoinsPass = 2,
 	},
 
-	-- Creator Dashboard → Monetization.
-	-- Paste real IDs after you create the products. 0 = Studio test grant.
 	Products = {
 		{ key = "coins_800", name = "800 Coins", coins = 800, robux = 79, id = 0 },
 		{ key = "coins_4500", name = "4,500 Coins", coins = 4500, robux = 399, id = 0 },

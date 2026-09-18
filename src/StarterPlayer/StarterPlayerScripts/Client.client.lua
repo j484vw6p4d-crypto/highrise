@@ -29,6 +29,8 @@ local state = {
 	aliveCount = 0,
 }
 local lastSync = os.clock()
+local roleShownKey = ""
+local shopTab = "Loadout"
 
 local function owns(id: string): boolean
 	for _, x in ipairs(state.owned) do
@@ -37,6 +39,11 @@ local function owns(id: string): boolean
 		end
 	end
 	return false
+end
+
+local old = playerGui:FindFirstChild("HighriseHud")
+if old then
+	old:Destroy()
 end
 
 local gui = Instance.new("ScreenGui")
@@ -56,16 +63,21 @@ local function attachFill(char: Model)
 		hum.JumpPower = Config.JumpPower
 	end
 	local hrp = char:WaitForChild("HumanoidRootPart", 8)
-	if not hrp or hrp:FindFirstChild("HighriseFill") then
+	if not hrp then
 		return
 	end
-	local l = Instance.new("PointLight")
-	l.Name = "HighriseFill"
-	l.Brightness = 1.2
-	l.Range = 28
-	l.Color = Color3.fromRGB(255, 226, 190)
-	l.Shadows = false
-	l.Parent = hrp
+	local l = hrp:FindFirstChild("HighriseFill")
+	if not l then
+		l = Instance.new("PointLight")
+		l.Name = "HighriseFill"
+		l.Parent = hrp
+	end
+	if l:IsA("PointLight") then
+		l.Brightness = 2.4
+		l.Range = 36
+		l.Color = Color3.fromRGB(255, 236, 210)
+		l.Shadows = false
+	end
 end
 player.CharacterAdded:Connect(attachFill)
 if player.Character then
@@ -86,21 +98,21 @@ end
 local ivory = Color3.fromRGB(232, 226, 214)
 local ink = Color3.fromRGB(10, 10, 12)
 local muted = Color3.fromRGB(168, 162, 154)
+local green = Color3.fromRGB(46, 170, 70)
 
 local top = mk("Frame", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.22,
+	BackgroundTransparency = 0.18,
 	BorderSizePixel = 0,
 	Position = UDim2.new(0.5, -210, 0, 18),
 	Size = UDim2.fromOffset(420, 64),
 }, gui) :: Frame
 mk("UICorner", { CornerRadius = UDim.new(0, 16) }, top)
-mk("UIStroke", { Color = Color3.fromRGB(70, 64, 56), Thickness = 1, Transparency = 0.4 }, top)
 
 local title = mk("TextLabel", {
 	BackgroundTransparency = 1,
 	Position = UDim2.fromOffset(16, 6),
-	Size = UDim2.fromOffset(200, 22),
+	Size = UDim2.fromOffset(240, 22),
 	Font = Enum.Font.GothamMedium,
 	Text = Config.Title .. "  " .. Config.BuildId,
 	TextColor3 = ivory,
@@ -124,7 +136,7 @@ local timerLab = mk("TextLabel", {
 	Position = UDim2.new(1, -140, 0, 10),
 	Size = UDim2.fromOffset(124, 44),
 	Font = Enum.Font.GothamBold,
-	Text = "0:22",
+	Text = "0:25",
 	TextColor3 = ivory,
 	TextSize = 28,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -132,7 +144,7 @@ local timerLab = mk("TextLabel", {
 
 local roleCard = mk("Frame", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.12,
+	BackgroundTransparency = 0.08,
 	BorderSizePixel = 0,
 	Position = UDim2.new(0.5, -160, 0.5, -70),
 	Size = UDim2.fromOffset(320, 140),
@@ -180,13 +192,13 @@ mk("UICorner", { CornerRadius = UDim.new(0, 12) }, toast)
 
 local coinsLab = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 20, 1, -48),
-	Size = UDim2.fromOffset(200, 28),
-	Font = Enum.Font.GothamMedium,
+	Position = UDim2.new(1, -200, 0, 22),
+	Size = UDim2.fromOffset(180, 28),
+	Font = Enum.Font.GothamBold,
 	Text = "0 coins",
-	TextColor3 = ivory,
-	TextSize = 16,
-	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = Color3.fromRGB(255, 210, 80),
+	TextSize = 18,
+	TextXAlignment = Enum.TextXAlignment.Right,
 }, gui) :: TextLabel
 
 local hint = mk("TextLabel", {
@@ -194,7 +206,7 @@ local hint = mk("TextLabel", {
 	Position = UDim2.new(0.5, -260, 1, -96),
 	Size = UDim2.fromOffset(520, 24),
 	Font = Enum.Font.Gotham,
-	Text = "WASD move  ·  Click to attack  ·  E on tasks  ·  Shop bottom-right",
+	Text = "WASD move  ·  Click to attack  ·  E on tasks  ·  Walk into SHOP",
 	TextColor3 = muted,
 	TextSize = 13,
 }, gui) :: TextLabel
@@ -214,7 +226,7 @@ mk("UICorner", { CornerRadius = UDim.new(0, 10) }, obj)
 
 local aliveLab = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 20, 1, -72),
+	Position = UDim2.new(0, 20, 1, -48),
 	Size = UDim2.fromOffset(220, 22),
 	Font = Enum.Font.GothamMedium,
 	Text = "",
@@ -237,40 +249,50 @@ local shopBtn = mk("TextButton", {
 mk("UICorner", { CornerRadius = UDim.new(0, 12) }, shopBtn)
 
 local shop = mk("Frame", {
-	BackgroundColor3 = Color3.fromRGB(14, 14, 16),
+	BackgroundColor3 = Color3.fromRGB(18, 16, 14),
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -280, 0.5, -210),
-	Size = UDim2.fromOffset(560, 420),
+	Position = UDim2.new(0.5, -310, 0.5, -230),
+	Size = UDim2.fromOffset(620, 460),
 	Visible = false,
 	ZIndex = 10,
 }, gui) :: Frame
-mk("UICorner", { CornerRadius = UDim.new(0, 22) }, shop)
+mk("UICorner", { CornerRadius = UDim.new(0, 16) }, shop)
 mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(24, 16),
-	Size = UDim2.fromOffset(300, 28),
+	Position = UDim2.fromOffset(20, 12),
+	Size = UDim2.fromOffset(200, 28),
 	Font = Enum.Font.GothamBold,
-	Text = "Atelier",
+	Text = "ATELIER",
 	TextColor3 = ivory,
 	TextSize = 22,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	ZIndex = 11,
 }, shop)
 local shopClose = mk("TextButton", {
-	BackgroundTransparency = 1,
+	BackgroundColor3 = Color3.fromRGB(160, 40, 50),
+	BorderSizePixel = 0,
 	Position = UDim2.new(1, -48, 0, 12),
-	Size = UDim2.fromOffset(36, 36),
+	Size = UDim2.fromOffset(32, 32),
 	Font = Enum.Font.GothamBold,
 	Text = "X",
-	TextColor3 = muted,
-	TextSize = 18,
+	TextColor3 = ivory,
+	TextSize = 16,
 	ZIndex = 11,
 }, shop) :: TextButton
+mk("UICorner", { CornerRadius = UDim.new(0, 8) }, shopClose)
+
+local tabBar = mk("Frame", {
+	BackgroundTransparency = 1,
+	Position = UDim2.fromOffset(16, 48),
+	Size = UDim2.new(1, -32, 0, 34),
+	ZIndex = 11,
+}, shop) :: Frame
+mk("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }, tabBar)
 
 local list = mk("ScrollingFrame", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 56),
-	Size = UDim2.new(1, -32, 1, -72),
+	Position = UDim2.fromOffset(16, 92),
+	Size = UDim2.new(1, -32, 1, -108),
 	CanvasSize = UDim2.fromOffset(0, 900),
 	ScrollBarThickness = 4,
 	ZIndex = 11,
@@ -280,44 +302,44 @@ mk("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.Layout
 
 local function row(text: string, sub: string, action: string, key: string, order: number)
 	local f = mk("Frame", {
-		BackgroundColor3 = Color3.fromRGB(22, 22, 26),
+		BackgroundColor3 = Color3.fromRGB(28, 24, 22),
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, -8, 0, 58),
+		Size = UDim2.new(1, -8, 0, 72),
 		LayoutOrder = order,
 		ZIndex = 12,
 	}, list) :: Frame
-	mk("UICorner", { CornerRadius = UDim.new(0, 12) }, f)
+	mk("UICorner", { CornerRadius = UDim.new(0, 10) }, f)
 	mk("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(14, 8),
-		Size = UDim2.fromOffset(300, 22),
-		Font = Enum.Font.GothamMedium,
+		Position = UDim2.fromOffset(14, 10),
+		Size = UDim2.fromOffset(360, 24),
+		Font = Enum.Font.GothamBold,
 		Text = text,
 		TextColor3 = ivory,
-		TextSize = 16,
+		TextSize = 18,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 13,
 	}, f)
 	mk("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(14, 30),
-		Size = UDim2.fromOffset(320, 18),
+		Position = UDim2.fromOffset(14, 36),
+		Size = UDim2.fromOffset(360, 22),
 		Font = Enum.Font.Gotham,
 		Text = sub,
 		TextColor3 = muted,
-		TextSize = 12,
+		TextSize = 13,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 13,
 	}, f)
 	local b = mk("TextButton", {
-		BackgroundColor3 = ivory,
+		BackgroundColor3 = if action == "Owned" or action == "Equipped" then Color3.fromRGB(70, 70, 74) else green,
 		BorderSizePixel = 0,
-		Position = UDim2.new(1, -118, 0.5, -14),
-		Size = UDim2.fromOffset(104, 28),
+		Position = UDim2.new(1, -126, 0.5, -16),
+		Size = UDim2.fromOffset(110, 32),
 		Font = Enum.Font.GothamBold,
 		Text = action,
-		TextColor3 = ink,
-		TextSize = 12,
+		TextColor3 = ivory,
+		TextSize = 14,
 		ZIndex = 13,
 	}, f) :: TextButton
 	mk("UICorner", { CornerRadius = UDim.new(0, 8) }, b)
@@ -339,24 +361,47 @@ local function rebuildShop()
 		end
 	end
 	local i = 1
-	for _, p in ipairs(Config.Products) do
-		row(p.name, "Robux  " .. tostring(p.robux), "Buy", "rbx:" .. p.key, i)
-		i += 1
+	if shopTab == "Coins" then
+		for _, p in ipairs(Config.Products) do
+			row(p.name, "Best for grinding nights  ·  R$ " .. tostring(p.robux), "Buy", "rbx:" .. p.key, i)
+			i += 1
+		end
+	elseif shopTab == "Passes" then
+		for _, p in ipairs(Config.Passes) do
+			local have = state.passes[p.key] == true
+			row(p.name, p.perks .. "  ·  R$ " .. tostring(p.robux), if have then "Owned" else "Buy", "rbx:" .. p.key, i)
+			i += 1
+		end
+	else
+		for _, it in ipairs(Shop.Items) do
+			local have = owns(it.id)
+			local equipped = state.equipped[it.slot] == it.id
+			local sub = if it.vip then "VIP exclusive" else (if it.price == 0 then "Starter" else it.price .. " coins")
+			local act = if equipped then "Equipped" elseif have then "Equip" else "Buy"
+			local key = if have then "equip:" .. it.id else "buy:" .. it.id
+			row(it.name, it.slot .. "  ·  " .. sub, act, key, i)
+			i += 1
+		end
 	end
-	for _, p in ipairs(Config.Passes) do
-		local have = state.passes[p.key] == true
-		row(p.name, p.perks .. "  ·  R$ " .. tostring(p.robux), if have then "Owned" else "Buy", "rbx:" .. p.key, i)
-		i += 1
-	end
-	for _, it in ipairs(Shop.Items) do
-		local have = owns(it.id)
-		local sub = if it.vip then "VIP exclusive" else (if it.price == 0 then "Starter" else it.price .. " coins")
-		local act = if have then "Equip" else "Buy"
-		local key = if have then "equip:" .. it.id else "buy:" .. it.id
-		row(it.name, it.slot .. "  ·  " .. sub, act, key, i)
-		i += 1
-	end
-	list.CanvasSize = UDim2.fromOffset(0, i * 66)
+	list.CanvasSize = UDim2.fromOffset(0, i * 80)
+end
+
+for _, name in ipairs({ "Loadout", "Coins", "Passes" }) do
+	local b = mk("TextButton", {
+		BackgroundColor3 = Color3.fromRGB(40, 36, 32),
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(110, 32),
+		Font = Enum.Font.GothamBold,
+		Text = name,
+		TextColor3 = ivory,
+		TextSize = 14,
+		ZIndex = 12,
+	}, tabBar) :: TextButton
+	mk("UICorner", { CornerRadius = UDim.new(0, 8) }, b)
+	b.MouseButton1Click:Connect(function()
+		shopTab = name
+		rebuildShop()
+	end)
 end
 
 shopBtn.MouseButton1Click:Connect(function()
@@ -409,6 +454,10 @@ Remotes.get("RoundState").OnClientEvent:Connect(function(payload)
 		aliveLab.Text = if state.phase == "Round" then (tostring(payload.aliveCount) .. " alive") else ""
 	end
 	phaseLab.Text = string.upper(state.phase)
+	if state.phase == "Lobby" or state.phase == "Over" then
+		roleCard.Visible = false
+		roleShownKey = ""
+	end
 	if state.phase == "Over" and payload.winner then
 		notify(payload.winner .. " win the night.")
 	end
@@ -418,18 +467,22 @@ Remotes.get("RoleReveal").OnClientEvent:Connect(function(role, ph)
 	if typeof(role) == "string" then
 		state.role = role
 	end
-	if ph == "Reveal" or ph == "Round" then
-		roleTitle.Text = string.upper(state.role)
-		roleBody.Text = ROLE_COPY[state.role] or ""
-		roleCard.Visible = true
-		if ph == "Round" then
-			task.delay(2.5, function()
-				roleCard.Visible = false
-			end)
-		end
-	else
-		roleCard.Visible = false
+	if ph ~= "Reveal" then
+		return
 	end
+	local key = state.role .. ":" .. tostring(ph)
+	if key == roleShownKey then
+		return
+	end
+	roleShownKey = key
+	roleTitle.Text = string.upper(state.role)
+	roleBody.Text = ROLE_COPY[state.role] or ""
+	roleCard.Visible = true
+	task.delay(4, function()
+		if roleShownKey == key then
+			roleCard.Visible = false
+		end
+	end)
 end)
 
 Remotes.get("Notify").OnClientEvent:Connect(function(msg)
@@ -490,7 +543,6 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
--- Task prompts. Never block the HUD/timer on this.
 task.spawn(function()
 	local folder = workspace:WaitForChild("Highrise", 30)
 	if not folder then
@@ -513,7 +565,6 @@ task.spawn(function()
 	folder.ChildAdded:Connect(bind)
 end)
 
--- Mobile attack button
 if UIS.TouchEnabled then
 	local atk = mk("TextButton", {
 		BackgroundColor3 = ivory,
@@ -534,7 +585,10 @@ RunService.RenderStepped:Connect(function()
 	local m = math.floor(left / 60)
 	local s = left % 60
 	timerLab.Text = string.format("%d:%02d", m, s)
-	title.Text = if state.phase == "Round" then string.upper(state.role) else (Config.Title .. "  " .. Config.BuildId)
+	title.Text = Config.Title .. "  " .. Config.BuildId
+	if state.phase == "Round" or state.phase == "Reveal" then
+		phaseLab.Text = string.upper(state.phase) .. "  ·  " .. string.upper(state.role)
+	end
 end)
 
 task.defer(function()

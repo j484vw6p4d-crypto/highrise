@@ -25,7 +25,7 @@ local state = {
 	owned = {} :: { string },
 	equipped = Shop.defaults(),
 	passes = {} :: { [string]: boolean },
-	objective = "Street lobby — shop, boards, then the night starts.",
+	objective = "Clubhouse, shop, boards, or run the waiting obby.",
 	aliveCount = 0,
 }
 local lastSync = os.clock()
@@ -95,37 +95,39 @@ local function mk(className: string, props: { [string]: any }, parent: Instance?
 	return i
 end
 
-local ivory = Color3.fromRGB(232, 226, 214)
-local ink = Color3.fromRGB(10, 10, 12)
+local ivory = Color3.fromRGB(236, 228, 214)
+local ink = Color3.fromRGB(8, 8, 10)
 local muted = Color3.fromRGB(168, 162, 154)
+local goldC = Color3.fromRGB(232, 186, 86)
 local green = Color3.fromRGB(46, 170, 70)
 
 local top = mk("Frame", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.18,
+	BackgroundTransparency = 0.12,
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -210, 0, 18),
-	Size = UDim2.fromOffset(420, 64),
+	Position = UDim2.new(0.5, -200, 0, 16),
+	Size = UDim2.fromOffset(400, 58),
 }, gui) :: Frame
-mk("UICorner", { CornerRadius = UDim.new(0, 16) }, top)
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, top)
+mk("UIStroke", { Color = goldC, Thickness = 1, Transparency = 0.55 }, top)
 
 local title = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 6),
-	Size = UDim2.fromOffset(240, 22),
+	Position = UDim2.fromOffset(22, 6),
+	Size = UDim2.fromOffset(200, 20),
 	Font = Enum.Font.GothamMedium,
 	Text = Config.Title .. "  " .. Config.BuildId,
-	TextColor3 = ivory,
-	TextSize = 13,
+	TextColor3 = goldC,
+	TextSize = 12,
 	TextXAlignment = Enum.TextXAlignment.Left,
 }, top) :: TextLabel
 
 local phaseLab = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 30),
+	Position = UDim2.fromOffset(22, 26),
 	Size = UDim2.fromOffset(220, 24),
 	Font = Enum.Font.GothamBold,
-	Text = "LOBBY",
+	Text = "WAITING",
 	TextColor3 = ivory,
 	TextSize = 18,
 	TextXAlignment = Enum.TextXAlignment.Left,
@@ -133,39 +135,57 @@ local phaseLab = mk("TextLabel", {
 
 local timerLab = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.new(1, -140, 0, 10),
-	Size = UDim2.fromOffset(124, 44),
+	Position = UDim2.new(1, -128, 0, 8),
+	Size = UDim2.fromOffset(108, 42),
 	Font = Enum.Font.GothamBold,
-	Text = "0:25",
+	Text = "0:40",
 	TextColor3 = ivory,
 	TextSize = 28,
 	TextXAlignment = Enum.TextXAlignment.Right,
 }, top) :: TextLabel
 
+local coinChip = mk("Frame", {
+	BackgroundColor3 = Color3.fromRGB(24, 18, 12),
+	BorderSizePixel = 0,
+	Position = UDim2.new(1, -168, 0, 18),
+	Size = UDim2.fromOffset(150, 36),
+}, gui) :: Frame
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, coinChip)
+mk("UIStroke", { Color = goldC, Thickness = 1, Transparency = 0.35 }, coinChip)
+local coinsLab = mk("TextLabel", {
+	BackgroundTransparency = 1,
+	Size = UDim2.fromScale(1, 1),
+	Font = Enum.Font.GothamBold,
+	Text = "0",
+	TextColor3 = goldC,
+	TextSize = 18,
+}, coinChip) :: TextLabel
+
 local roleCard = mk("Frame", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.08,
+	BackgroundTransparency = 0.04,
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -160, 0.5, -70),
-	Size = UDim2.fromOffset(320, 140),
+	Position = UDim2.new(0.5, -170, 0.5, -78),
+	Size = UDim2.fromOffset(340, 156),
 	Visible = false,
 	ZIndex = 5,
 }, gui) :: Frame
-mk("UICorner", { CornerRadius = UDim.new(0, 20) }, roleCard)
+mk("UICorner", { CornerRadius = UDim.new(0, 22) }, roleCard)
+mk("UIStroke", { Color = goldC, Thickness = 1.4, Transparency = 0.3 }, roleCard)
 local roleTitle = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(20, 24),
-	Size = UDim2.fromOffset(280, 36),
+	Position = UDim2.fromOffset(24, 22),
+	Size = UDim2.fromOffset(292, 40),
 	Font = Enum.Font.GothamBold,
 	Text = "INNOCENT",
-	TextColor3 = ivory,
-	TextSize = 28,
+	TextColor3 = goldC,
+	TextSize = 30,
 	ZIndex = 6,
 }, roleCard) :: TextLabel
 local roleBody = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(20, 68),
-	Size = UDim2.fromOffset(280, 50),
+	Position = UDim2.fromOffset(24, 70),
+	Size = UDim2.fromOffset(292, 60),
 	Font = Enum.Font.Gotham,
 	Text = "",
 	TextColor3 = muted,
@@ -177,10 +197,10 @@ local roleBody = mk("TextLabel", {
 
 local toast = mk("TextLabel", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.15,
+	BackgroundTransparency = 0.1,
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -180, 1, -140),
-	Size = UDim2.fromOffset(360, 40),
+	Position = UDim2.new(0.5, -190, 1, -168),
+	Size = UDim2.fromOffset(380, 40),
 	Font = Enum.Font.Gotham,
 	Text = "",
 	TextColor3 = ivory,
@@ -188,46 +208,56 @@ local toast = mk("TextLabel", {
 	Visible = false,
 	ZIndex = 8,
 }, gui) :: TextLabel
-mk("UICorner", { CornerRadius = UDim.new(0, 12) }, toast)
-
-local coinsLab = mk("TextLabel", {
-	BackgroundTransparency = 1,
-	Position = UDim2.new(1, -200, 0, 22),
-	Size = UDim2.fromOffset(180, 28),
-	Font = Enum.Font.GothamBold,
-	Text = "0 coins",
-	TextColor3 = Color3.fromRGB(255, 210, 80),
-	TextSize = 18,
-	TextXAlignment = Enum.TextXAlignment.Right,
-}, gui) :: TextLabel
-
-local hint = mk("TextLabel", {
-	BackgroundTransparency = 1,
-	Position = UDim2.new(0.5, -260, 1, -96),
-	Size = UDim2.fromOffset(520, 24),
-	Font = Enum.Font.Gotham,
-	Text = "WASD move  ·  Click to attack  ·  E on tasks  ·  Walk into SHOP",
-	TextColor3 = muted,
-	TextSize = 13,
-}, gui) :: TextLabel
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, toast)
 
 local obj = mk("TextLabel", {
 	BackgroundColor3 = ink,
-	BackgroundTransparency = 0.25,
+	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -220, 0, 90),
-	Size = UDim2.fromOffset(440, 28),
+	Position = UDim2.new(0.5, -230, 0, 84),
+	Size = UDim2.fromOffset(460, 30),
 	Font = Enum.Font.Gotham,
-	Text = "Shop, then wait for the night to start.",
+	Text = "Clubhouse · Shop · Boards · Waiting obby",
 	TextColor3 = ivory,
 	TextSize = 14,
 }, gui) :: TextLabel
-mk("UICorner", { CornerRadius = UDim.new(0, 10) }, obj)
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, obj)
+
+local dock = mk("Frame", {
+	BackgroundColor3 = ink,
+	BackgroundTransparency = 0.08,
+	BorderSizePixel = 0,
+	Position = UDim2.new(0.5, -168, 1, -78),
+	Size = UDim2.fromOffset(336, 54),
+}, gui) :: Frame
+mk("UICorner", { CornerRadius = UDim.new(1, 0) }, dock)
+mk("UIStroke", { Color = Color3.fromRGB(70, 62, 50), Thickness = 1, Transparency = 0.4 }, dock)
+
+local function dockBtn(x: number, label: string): TextButton
+	local b = mk("TextButton", {
+		BackgroundColor3 = Color3.fromRGB(28, 24, 20),
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(x, 8),
+		Size = UDim2.fromOffset(72, 38),
+		Font = Enum.Font.GothamBold,
+		Text = label,
+		TextColor3 = ivory,
+		TextSize = 13,
+		AutoButtonColor = true,
+	}, dock) :: TextButton
+	mk("UICorner", { CornerRadius = UDim.new(0, 12) }, b)
+	return b
+end
+
+local shopBtn = dockBtn(12, "Shop")
+local _boardsHint = dockBtn(92, "Boards")
+local _obbyHint = dockBtn(172, "Obby")
+local _houseHint = dockBtn(252, "House")
 
 local aliveLab = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 20, 1, -48),
-	Size = UDim2.fromOffset(220, 22),
+	Position = UDim2.new(0, 22, 1, -36),
+	Size = UDim2.fromOffset(220, 20),
 	Font = Enum.Font.GothamMedium,
 	Text = "",
 	TextColor3 = muted,
@@ -235,43 +265,31 @@ local aliveLab = mk("TextLabel", {
 	TextXAlignment = Enum.TextXAlignment.Left,
 }, gui) :: TextLabel
 
-local shopBtn = mk("TextButton", {
-	BackgroundColor3 = ivory,
-	BorderSizePixel = 0,
-	Position = UDim2.new(1, -132, 1, -56),
-	Size = UDim2.fromOffset(112, 40),
-	Font = Enum.Font.GothamBold,
-	Text = "Shop",
-	TextColor3 = ink,
-	TextSize = 16,
-	AutoButtonColor = true,
-}, gui) :: TextButton
-mk("UICorner", { CornerRadius = UDim.new(0, 12) }, shopBtn)
-
 local shop = mk("Frame", {
-	BackgroundColor3 = Color3.fromRGB(18, 16, 14),
+	BackgroundColor3 = Color3.fromRGB(14, 12, 12),
 	BorderSizePixel = 0,
-	Position = UDim2.new(0.5, -310, 0.5, -230),
-	Size = UDim2.fromOffset(620, 460),
+	Position = UDim2.new(0.5, -320, 0.5, -240),
+	Size = UDim2.fromOffset(640, 480),
 	Visible = false,
 	ZIndex = 10,
 }, gui) :: Frame
-mk("UICorner", { CornerRadius = UDim.new(0, 16) }, shop)
+mk("UICorner", { CornerRadius = UDim.new(0, 18) }, shop)
+mk("UIStroke", { Color = goldC, Thickness = 1, Transparency = 0.45 }, shop)
 mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(20, 12),
-	Size = UDim2.fromOffset(200, 28),
+	Position = UDim2.fromOffset(22, 14),
+	Size = UDim2.fromOffset(240, 28),
 	Font = Enum.Font.GothamBold,
 	Text = "ATELIER",
-	TextColor3 = ivory,
+	TextColor3 = goldC,
 	TextSize = 22,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	ZIndex = 11,
 }, shop)
 local shopClose = mk("TextButton", {
-	BackgroundColor3 = Color3.fromRGB(160, 40, 50),
+	BackgroundColor3 = Color3.fromRGB(150, 36, 46),
 	BorderSizePixel = 0,
-	Position = UDim2.new(1, -48, 0, 12),
+	Position = UDim2.new(1, -48, 0, 14),
 	Size = UDim2.fromOffset(32, 32),
 	Font = Enum.Font.GothamBold,
 	Text = "X",
@@ -283,7 +301,7 @@ mk("UICorner", { CornerRadius = UDim.new(0, 8) }, shopClose)
 
 local tabBar = mk("Frame", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 48),
+	Position = UDim2.fromOffset(16, 52),
 	Size = UDim2.new(1, -32, 0, 34),
 	ZIndex = 11,
 }, shop) :: Frame
@@ -291,8 +309,8 @@ mk("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UD
 
 local list = mk("ScrollingFrame", {
 	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(16, 92),
-	Size = UDim2.new(1, -32, 1, -108),
+	Position = UDim2.fromOffset(16, 96),
+	Size = UDim2.new(1, -32, 1, -112),
 	CanvasSize = UDim2.fromOffset(0, 900),
 	ScrollBarThickness = 4,
 	ZIndex = 11,
@@ -302,7 +320,7 @@ mk("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.Layout
 
 local function row(text: string, sub: string, action: string, key: string, order: number)
 	local f = mk("Frame", {
-		BackgroundColor3 = Color3.fromRGB(28, 24, 22),
+		BackgroundColor3 = Color3.fromRGB(26, 22, 20),
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, -8, 0, 72),
 		LayoutOrder = order,
@@ -363,7 +381,7 @@ local function rebuildShop()
 	local i = 1
 	if shopTab == "Coins" then
 		for _, p in ipairs(Config.Products) do
-			row(p.name, "Best for grinding nights  ·  R$ " .. tostring(p.robux), "Buy", "rbx:" .. p.key, i)
+			row(p.name, "Robux pack  ·  R$ " .. tostring(p.robux), "Buy", "rbx:" .. p.key, i)
 			i += 1
 		end
 	elseif shopTab == "Passes" then
@@ -388,7 +406,7 @@ end
 
 for _, name in ipairs({ "Loadout", "Coins", "Passes" }) do
 	local b = mk("TextButton", {
-		BackgroundColor3 = Color3.fromRGB(40, 36, 32),
+		BackgroundColor3 = Color3.fromRGB(40, 34, 28),
 		BorderSizePixel = 0,
 		Size = UDim2.fromOffset(110, 32),
 		Font = Enum.Font.GothamBold,
@@ -404,6 +422,10 @@ for _, name in ipairs({ "Loadout", "Coins", "Passes" }) do
 	end)
 end
 
+local function openShop()
+	shop.Visible = true
+	rebuildShop()
+end
 shopBtn.MouseButton1Click:Connect(function()
 	shop.Visible = not shop.Visible
 	if shop.Visible then
@@ -414,10 +436,7 @@ shopClose.MouseButton1Click:Connect(function()
 	shop.Visible = false
 end)
 
-Remotes.get("OpenShop").OnClientEvent:Connect(function()
-	shop.Visible = true
-	rebuildShop()
-end)
+Remotes.get("OpenShop").OnClientEvent:Connect(openShop)
 
 local function notify(msg: string)
 	toast.Text = msg
@@ -428,6 +447,16 @@ local function notify(msg: string)
 		end
 	end)
 end
+
+_boardsHint.MouseButton1Click:Connect(function()
+	notify("Boards are left of the fountain.")
+end)
+_obbyHint.MouseButton1Click:Connect(function()
+	notify("Obby is past 80TH STREET.")
+end)
+_houseHint.MouseButton1Click:Connect(function()
+	notify("Clubhouse is left of the boards.")
+end)
 
 local ROLE_COPY = {
 	Murderer = "Silence the floor. One strike. Don't get seen.",
@@ -453,7 +482,11 @@ Remotes.get("RoundState").OnClientEvent:Connect(function(payload)
 		state.aliveCount = payload.aliveCount
 		aliveLab.Text = if state.phase == "Round" then (tostring(payload.aliveCount) .. " alive") else ""
 	end
-	phaseLab.Text = string.upper(state.phase)
+	if state.phase == "Lobby" then
+		phaseLab.Text = "WAITING"
+	else
+		phaseLab.Text = string.upper(state.phase)
+	end
 	if state.phase == "Lobby" or state.phase == "Over" then
 		roleCard.Visible = false
 		roleShownKey = ""
@@ -496,7 +529,7 @@ Remotes.get("Profile").OnClientEvent:Connect(function(profile, passes)
 		state.coins = profile.coins or 0
 		state.owned = profile.owned or state.owned
 		state.equipped = profile.equipped or state.equipped
-		coinsLab.Text = tostring(state.coins) .. " coins"
+		coinsLab.Text = tostring(state.coins) .. "  coins"
 	end
 	if typeof(passes) == "table" then
 		state.passes = passes
@@ -569,7 +602,7 @@ if UIS.TouchEnabled then
 	local atk = mk("TextButton", {
 		BackgroundColor3 = ivory,
 		BorderSizePixel = 0,
-		Position = UDim2.new(1, -96, 1, -160),
+		Position = UDim2.new(1, -96, 1, -170),
 		Size = UDim2.fromOffset(72, 72),
 		Font = Enum.Font.GothamBold,
 		Text = "USE",

@@ -1,10 +1,10 @@
 --!strict
 local Config = {
 	Title = "Highrise",
-	BuildId = "HR-16",
+	BuildId = "HR-17",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 25,
+	LobbySeconds = 40,
 	RevealSeconds = 5,
 	RoundSeconds = 150,
 	GraceSeconds = 8,
@@ -15,7 +15,7 @@ local Config = {
 	WalkInnocent = 16,
 	WalkSheriff = 17,
 	WalkMurderer = 18,
-	JumpPower = 40,
+	JumpPower = 50,
 
 	KnifeRange = 7.5,
 	KnifeCooldown = 0.8,

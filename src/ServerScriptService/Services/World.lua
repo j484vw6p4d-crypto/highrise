@@ -15,7 +15,7 @@ local stone = Color3.fromRGB(42, 40, 46)
 local water = Color3.fromRGB(36, 64, 82)
 local carpet = Color3.fromRGB(48, 22, 28)
 
-local root: Folder
+local root: Instance
 local waypoints: { Vector3 } = {}
 local spawns: { Vector3 } = {}
 local tasks: { BasePart } = {}
@@ -74,7 +74,7 @@ function World.hrpHeight(): number
 end
 
 function World.contains(pos: Vector3): boolean
-	return pos.Y > 2.2 and pos.Y < 40 and math.abs(pos.X) < 250 and math.abs(pos.Z) < 250
+	return pos.Y > -2 and pos.Y < 45 and math.abs(pos.X) < 250 and math.abs(pos.Z) < 250
 end
 
 function World.safe(pos: Vector3): Vector3
@@ -90,7 +90,6 @@ function World.ensureGround()
 	if g and g:IsA("BasePart") then
 		return g
 	end
-	-- Top face is y=0. Characters always have something to land on.
 	return part({
 		Name = "HighriseGround",
 		Size = Vector3.new(1024, 32, 1024),
@@ -101,11 +100,44 @@ function World.ensureGround()
 	}, workspace)
 end
 
+-- Marble box that exists even if the rest of build() errors.
+function World.ensureShell()
+	World.ensureGround()
+	local function box(name: string, size: Vector3, pos: Vector3, color: Color3, mat: Enum.Material, trans: number?)
+		local existing = workspace:FindFirstChild(name)
+		if existing and existing:IsA("BasePart") then
+			return existing
+		end
+		return part({
+			Name = name,
+			Size = size,
+			Position = pos,
+			Material = mat,
+			Color = color,
+			Transparency = trans or 0,
+			Locked = true,
+		}, workspace)
+	end
+	box("HR_Floor", Vector3.new(140, 2, 110), Vector3.new(0, 0, 0), marble, Enum.Material.Marble)
+	box("HR_Ceiling", Vector3.new(140, 2, 110), Vector3.new(0, 21, 0), ink, Enum.Material.SmoothPlastic)
+	box("HR_WallS", Vector3.new(140, 20, 3), Vector3.new(0, 11, -55), ivory, Enum.Material.Marble)
+	box("HR_WallN", Vector3.new(140, 20, 2), Vector3.new(0, 11, 54), glassCol, Enum.Material.Glass, 0.35)
+	box("HR_WallE", Vector3.new(3, 20, 110), Vector3.new(70, 11, 0), ivory, Enum.Material.Marble)
+	box("HR_WallW", Vector3.new(3, 20, 110), Vector3.new(-70, 11, 0), ivory, Enum.Material.Marble)
+	if #spawns == 0 then
+		for i = 1, 8 do
+			local a = (i / 8) * math.pi * 2
+			table.insert(spawns, Vector3.new(math.cos(a) * 28, STAND_Y, math.sin(a) * 22))
+		end
+	end
+	World.LobbySpawn = Vector3.new(0, STAND_Y, 0)
+end
+
 function World.applyLighting()
-	Lighting.ClockTime = 20.5
-	Lighting.Brightness = 3.2
-	Lighting.Ambient = Color3.fromRGB(100, 92, 104)
-	Lighting.OutdoorAmbient = Color3.fromRGB(70, 74, 100)
+	Lighting.ClockTime = 16.5
+	Lighting.Brightness = 3.4
+	Lighting.Ambient = Color3.fromRGB(120, 110, 115)
+	Lighting.OutdoorAmbient = Color3.fromRGB(90, 92, 110)
 	Lighting.ColorShift_Top = Color3.fromRGB(255, 196, 140)
 	Lighting.ColorShift_Bottom = Color3.fromRGB(48, 56, 96)
 	Lighting.FogStart = 250
@@ -123,14 +155,7 @@ function World.applyLighting()
 			old:Destroy()
 		end
 	end
-	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.05
-	atm.Offset = 0.3
-	atm.Color = Color3.fromRGB(110, 104, 128)
-	atm.Decay = Color3.fromRGB(48, 44, 70)
-	atm.Glare = 0.2
-	atm.Haze = 0.18
-	atm.Parent = Lighting
+	-- No dense Atmosphere. That was rendering as a black void in Play Solo.
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Brightness = 0.08
 	cc.Contrast = 0.04
@@ -254,13 +279,13 @@ local function city()
 end
 
 function World.build()
-	World.ensureGround()
+	World.ensureShell()
 
 	local existing = workspace:FindFirstChild("Highrise")
 	if existing then
 		existing:Destroy()
 	end
-	root = Instance.new("Folder")
+	root = Instance.new("Model")
 	root.Name = "Highrise"
 	root.Parent = workspace
 	waypoints = {}
@@ -452,7 +477,7 @@ function World.build()
 
 	for i = 1, 8 do
 		local a = (i / 8) * math.pi * 2
-		local s = Vector3.new(math.cos(a) * 10, STAND_Y, math.sin(a) * 8)
+		local s = Vector3.new(math.cos(a) * 28, STAND_Y, math.sin(a) * 22)
 		table.insert(spawns, s)
 		wp(s)
 	end

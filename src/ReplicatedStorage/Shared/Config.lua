@@ -3,11 +3,11 @@ local Config = {
 	Title = "Highrise",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 18,
+	LobbySeconds = 20,
 	RevealSeconds = 5,
 	RoundSeconds = 120,
-	GraceSeconds = 6,
-	BotFillTo = 5,
+	GraceSeconds = 8,
+	BotFillTo = 4,
 	MinPlayersToStart = 1,
 
 	WalkLobby = 16,

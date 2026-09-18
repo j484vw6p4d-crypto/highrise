@@ -95,10 +95,23 @@ end
 function Bots.spawn(count: number)
 	Bots.clear()
 	local parent = workspace:FindFirstChild("Highrise") or workspace
+	local spawnList = World.spawns()
+	local fallback = {
+		Vector3.new(28, 5, 22),
+		Vector3.new(-28, 5, 22),
+		Vector3.new(28, 5, -22),
+		Vector3.new(-28, 5, -22),
+		Vector3.new(0, 5, 30),
+		Vector3.new(0, 5, -30),
+	}
 	for i = 1, count do
 		local color = COLORS[((i - 1) % #COLORS) + 1]
-		local spawnList = World.spawns()
-		local pos = if #spawnList > 0 then spawnList[((i - 1) % #spawnList) + 1] else World.LobbySpawn
+		local pos: Vector3
+		if #spawnList > 0 then
+			pos = spawnList[((i - 1) % #spawnList) + 1]
+		else
+			pos = fallback[((i - 1) % #fallback) + 1]
+		end
 		local model = makeDummy("Guest " .. NAMES[((i - 1) % #NAMES) + 1], color, pos)
 		model:SetAttribute("IsBot", true)
 		model:SetAttribute("BotIndex", i)

@@ -9,44 +9,88 @@
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "$ignoreUnknownInstances": true,
-      "Boot": { "$path": "src/ServerScriptService/Boot.server.lua" },
-      "Services": { "$path": "src/ServerScriptService/Services" },
-      "Main": { "$path": "src/ServerScriptService/Main.server.lua" }
+      "$path": "src/ServerScriptService"
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "Client": { "$path": "src/StarterPlayer/StarterPlayerScripts/Client.client.lua" }
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
       }
     },
     "Workspace": {
       "$className": "Workspace",
       "$ignoreUnknownInstances": true,
-      "HighriseGround": {
+      "HR_Floor": {
         "$className": "Part",
         "$properties": {
           "Anchored": true,
           "CanCollide": true,
-          "CastShadow": false,
-          "Size": [1024, 32, 1024],
-          "CFrame": [0, -16, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-          "Color": [0.047, 0.055, 0.078],
+          "Size": [140, 2, 110],
+          "CFrame": [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.93, 0.92, 0.88],
+          "Material": "Marble",
+          "Locked": true
+        }
+      },
+      "HR_Ceiling": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [140, 2, 110],
+          "CFrame": [0, 21, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.07, 0.06, 0.07],
           "Material": "SmoothPlastic",
           "Locked": true
         }
       },
-      "LobbySpawn": {
-        "$className": "SpawnLocation",
+      "HR_WallS": {
+        "$className": "Part",
         "$properties": {
           "Anchored": true,
           "CanCollide": true,
-          "Size": [16, 1, 16],
-          "CFrame": [0, 1.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-          "Transparency": 1,
-          "Duration": 10,
-          "Neutral": true,
+          "Size": [140, 20, 3],
+          "CFrame": [0, 11, -55, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.91, 0.89, 0.84],
+          "Material": "Marble",
+          "Locked": true
+        }
+      },
+      "HR_WallN": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [140, 20, 2],
+          "CFrame": [0, 11, 54, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.59, 0.7, 0.78],
+          "Material": "Glass",
+          "Transparency": 0.35,
+          "Locked": true
+        }
+      },
+      "HR_WallE": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [3, 20, 110],
+          "CFrame": [70, 11, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.91, 0.89, 0.84],
+          "Material": "Marble",
+          "Locked": true
+        }
+      },
+      "HR_WallW": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [3, 20, 110],
+          "CFrame": [-70, 11, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.91, 0.89, 0.84],
+          "Material": "Marble",
           "Locked": true
         }
       }

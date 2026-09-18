@@ -1,23 +1,83 @@
 --!strict
 local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local StarterPlayer = game:GetService("StarterPlayer")
+local StarterGui = game:GetService("StarterGui")
 
 local Config = require(game.ReplicatedStorage.Shared.Config)
 local Remotes = require(game.ReplicatedStorage.Shared.Remotes)
 local Shop = require(game.ReplicatedStorage.Shared.Shop)
+local World = require(script.Parent.Services.World)
 local Data = require(script.Parent.Services.Data)
 local Monetization = require(script.Parent.Services.Monetization)
 local Round = require(script.Parent.Services.Round)
 
 Remotes.init()
-Monetization.start()
 
-workspace:WaitForChild("Highrise", 30)
+pcall(function()
+	workspace.Gravity = 196.2
+	workspace.FallenPartsDestroyHeight = -500
+	workspace.StreamingEnabled = false
+end)
+
+-- Kill the default Baseplate spawn so we are not standing on that sun pad.
+local function wipeDefaults()
+	for _, inst in ipairs(workspace:GetDescendants()) do
+		if inst:IsA("SpawnLocation") or inst.Name == "Baseplate" or inst.Name == "Spawn" then
+			if inst.Name ~= "LobbySpawn" then
+				inst:Destroy()
+			end
+		end
+	end
+	local terrain = workspace:FindFirstChildOfClass("Terrain")
+	if terrain then
+		pcall(function()
+			terrain:Clear()
+		end)
+	end
+end
+wipeDefaults()
+
+World.applyLighting()
+local ok, err = pcall(function()
+	World.build()
+end)
+if not ok then
+	warn("[Highrise] World.build failed: ", err)
+	World.ensureShell()
+end
+wipeDefaults()
+
+local spawn = workspace:FindFirstChild("LobbySpawn")
+if not (spawn and spawn:IsA("SpawnLocation")) then
+	local s = Instance.new("SpawnLocation")
+	s.Name = "LobbySpawn"
+	s.Size = Vector3.new(12, 1, 12)
+	s.CFrame = CFrame.new(0, 2, 0)
+	s.Anchored = true
+	s.Transparency = 1
+	s.CanCollide = true
+	s.Neutral = true
+	s.Duration = 0
+	s.Parent = workspace
+	spawn = s
+end
+
+StarterPlayer.CameraMaxZoomDistance = 22
+StarterPlayer.CameraMinZoomDistance = 8
+StarterPlayer.EnableMouseLockOption = true
+StarterPlayer.CharacterWalkSpeed = Config.WalkLobby
+StarterPlayer.CharacterJumpPower = Config.JumpPower
+StarterGui.ResetPlayerGuiOnSpawn = false
+
+Monetization.start()
 
 local function pushProfile(player: Player)
 	Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
 end
 
 local function setupPlayer(player: Player)
+	player.RespawnTime = 2
 	Data.load(player)
 	if not player:FindFirstChild("leaderstats") then
 		local ls = Instance.new("Folder")
@@ -100,4 +160,4 @@ Remotes.get("ShopEquip").OnServerEvent:Connect(function(player, id)
 end)
 
 Round.start()
-print("[Highrise] " .. Config.Title .. " live.")
+print("[Highrise] live. lighting=", Lighting.ClockTime, "map=", workspace:FindFirstChild("Highrise") ~= nil)

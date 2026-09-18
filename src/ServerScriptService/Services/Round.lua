@@ -212,18 +212,32 @@ local function weldWeapon(actor: Actor, slot: string)
 end
 
 local function teleport(actor: Actor, pos: Vector3)
+	local dest = CFrame.new(World.safe(pos))
 	local char = characterOf(actor)
-	local dest = World.safe(pos)
+	local hrp = hrpOf(actor)
 	if char then
 		pcall(function()
-			char:PivotTo(CFrame.new(dest))
+			char:PivotTo(dest)
 		end)
 	end
-	local hrp = hrpOf(actor)
-	if hrp then
-		hrp.CFrame = CFrame.new(dest)
-		hrp.AssemblyLinearVelocity = Vector3.zero
-		hrp.AssemblyAngularVelocity = Vector3.zero
+	if not hrp then
+		return
+	end
+	if isPlayer(actor) then
+		hrp.Anchored = true
+	end
+	hrp.CFrame = dest
+	hrp.AssemblyLinearVelocity = Vector3.zero
+	hrp.AssemblyAngularVelocity = Vector3.zero
+	if isPlayer(actor) then
+		task.delay(0.12, function()
+			if hrp.Parent then
+				if hrp.Position.Y < 3 then
+					hrp.CFrame = dest
+				end
+				hrp.Anchored = false
+			end
+		end)
 	end
 end
 

@@ -31,50 +31,52 @@ local function limb(model: Model, name: string, size: Vector3, cf: CFrame, color
 	p.CFrame = cf
 	p.Color = color
 	p.Material = Enum.Material.SmoothPlastic
-	p.Massless = true
-	p.CanCollide = name == "HumanoidRootPart"
-	p.Anchored = false
+	p.Anchored = true
+	p.CanCollide = false
 	p.Parent = model
 	return p
-end
-
-local function weld(a: BasePart, b: BasePart, c0: CFrame)
-	local w = Instance.new("Weld")
-	w.Part0 = a
-	w.Part1 = b
-	w.C0 = c0
-	w.Parent = a
 end
 
 local function makeDummy(name: string, bodyColor: Color3, pos: Vector3): Model
 	local model = Instance.new("Model")
 	model.Name = name
-	local cf = CFrame.new(World.safe(pos))
+	local stand = World.safe(pos)
+	local cf = CFrame.new(stand)
 	local hrp = limb(model, "HumanoidRootPart", Vector3.new(2, 2, 1), cf, bodyColor)
 	hrp.Transparency = 1
-	local torso = limb(model, "Torso", Vector3.new(2, 2, 1), cf, bodyColor)
-	local head = limb(model, "Head", Vector3.new(1.2, 1.2, 1.2), cf * CFrame.new(0, 1.6, 0), Color3.fromRGB(230, 210, 190))
-	local la = limb(model, "Left Arm", Vector3.new(1, 2, 1), cf * CFrame.new(-1.5, 0, 0), Color3.fromRGB(230, 210, 190))
-	local ra = limb(model, "Right Arm", Vector3.new(1, 2, 1), cf * CFrame.new(1.5, 0, 0), Color3.fromRGB(230, 210, 190))
-	local ll = limb(model, "Left Leg", Vector3.new(1, 2, 1), cf * CFrame.new(-0.5, -2, 0), Color3.fromRGB(20, 20, 24))
-	local rl = limb(model, "Right Leg", Vector3.new(1, 2, 1), cf * CFrame.new(0.5, -2, 0), Color3.fromRGB(20, 20, 24))
-	weld(hrp, torso, CFrame.new())
-	weld(hrp, head, CFrame.new(0, 1.6, 0))
-	weld(hrp, la, CFrame.new(-1.5, 0, 0))
-	weld(hrp, ra, CFrame.new(1.5, 0, 0))
-	weld(hrp, ll, CFrame.new(-0.5, -2, 0))
-	weld(hrp, rl, CFrame.new(0.5, -2, 0))
+	hrp.CanCollide = false
+	limb(model, "Torso", Vector3.new(2, 2, 1), cf, bodyColor)
+	limb(model, "Head", Vector3.new(1.2, 1.2, 1.2), cf * CFrame.new(0, 1.6, 0), Color3.fromRGB(230, 210, 190))
+	limb(model, "Left Arm", Vector3.new(1, 2, 1), cf * CFrame.new(-1.5, 0, 0), Color3.fromRGB(230, 210, 190))
+	limb(model, "Right Arm", Vector3.new(1, 2, 1), cf * CFrame.new(1.5, 0, 0), Color3.fromRGB(230, 210, 190))
+	limb(model, "Left Leg", Vector3.new(1, 2, 1), cf * CFrame.new(-0.5, -2, 0), Color3.fromRGB(20, 20, 24))
+	limb(model, "Right Leg", Vector3.new(1, 2, 1), cf * CFrame.new(0.5, -2, 0), Color3.fromRGB(20, 20, 24))
 	local hum = Instance.new("Humanoid")
 	hum.RigType = Enum.HumanoidRigType.R6
 	hum.MaxHealth = 100
 	hum.Health = 100
 	hum.WalkSpeed = 14
 	hum.JumpPower = 0
-	hum.HipHeight = 2
 	hum.DisplayName = name
 	hum.Parent = model
 	model.PrimaryPart = hrp
+	model:SetAttribute("WalkTo", stand)
 	return model
+end
+
+local function setModelCFrame(model: Model, cf: CFrame)
+	local hrp = model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
+		return
+	end
+	local offset = cf * hrp.CFrame:Inverse()
+	for _, ch in ipairs(model:GetChildren()) do
+		if ch:IsA("BasePart") then
+			ch.CFrame = offset * ch.CFrame
+			ch.Anchored = true
+			ch.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
 end
 
 function Bots.clear()
@@ -109,6 +111,7 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 	running = true
 	task.spawn(function()
 		while running do
+			local dt = 0.2
 			for _, model in ipairs(models) do
 				if not model.Parent then
 					continue
@@ -117,10 +120,6 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 				local hrp = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if not hum or hum.Health <= 0 or not hrp then
 					continue
-				end
-				if not World.contains(hrp.Position) then
-					hrp.CFrame = CFrame.new(World.safe(hrp.Position))
-					hrp.AssemblyLinearVelocity = Vector3.zero
 				end
 				local role = getRole(model)
 				local targetPos = randomWp()
@@ -168,8 +167,7 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 						end
 					end
 				elseif role == "Sheriff" and nearest and nearestDist < 55 then
-					local nRole = getRole(nearest)
-					if nRole == "Murderer" then
+					if getRole(nearest) == "Murderer" then
 						local tpart = if typeof(nearest) == "Instance" and nearest:IsA("Player")
 							then nearest.Character and nearest.Character:FindFirstChild("HumanoidRootPart")
 							elseif typeof(nearest) == "Instance" then (nearest :: Model):FindFirstChild("HumanoidRootPart")
@@ -182,8 +180,7 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 						end
 					end
 				elseif role == "Innocent" and nearest and nearestDist < 16 then
-					local nRole = getRole(nearest)
-					if nRole == "Murderer" then
+					if getRole(nearest) == "Murderer" then
 						local nhrp: BasePart? = nil
 						if typeof(nearest) == "Instance" and nearest:IsA("Player") then
 							local ch = nearest.Character
@@ -200,11 +197,19 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 					end
 				end
 
-				pcall(function()
-					hum:MoveTo(World.safe(targetPos))
-				end)
+				targetPos = World.safe(targetPos)
+				local now = Vector3.new(hrp.Position.X, World.hrpHeight(), hrp.Position.Z)
+				local delta = Vector3.new(targetPos.X - now.X, 0, targetPos.Z - now.Z)
+				local step = math.min(14 * dt, delta.Magnitude)
+				local nextPos = now
+				if delta.Magnitude > 0.4 then
+					nextPos = now + delta.Unit * step
+					setModelCFrame(model, CFrame.lookAt(nextPos, nextPos + delta.Unit))
+				else
+					setModelCFrame(model, CFrame.new(World.safe(now)))
+				end
 			end
-			task.wait(0.9)
+			task.wait(0.2)
 		end
 	end)
 end

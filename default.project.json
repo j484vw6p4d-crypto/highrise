@@ -23,7 +23,33 @@
     },
     "Workspace": {
       "$className": "Workspace",
-      "$ignoreUnknownInstances": true
+      "$ignoreUnknownInstances": true,
+      "HighriseGround": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "CastShadow": false,
+          "Size": [1024, 32, 1024],
+          "CFrame": [0, -16, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.047, 0.055, 0.078],
+          "Material": "SmoothPlastic",
+          "Locked": true
+        }
+      },
+      "LobbySpawn": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [16, 1, 16],
+          "CFrame": [0, 1.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Transparency": 1,
+          "Duration": 10,
+          "Neutral": true,
+          "Locked": true
+        }
+      }
     },
     "Lighting": {
       "$className": "Lighting",

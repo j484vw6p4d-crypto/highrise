@@ -20,13 +20,14 @@ local waypoints: { Vector3 } = {}
 local spawns: { Vector3 } = {}
 local tasks: { BasePart } = {}
 
--- Playable box. Floor top is 10. Walls keep you in. Bedrock makes falling impossible.
-local FLOOR_TOP = 10
+-- House sits on y=0 ground. Default Studio spawn is here. Nobody can fall through.
+local FLOOR_TOP = 1
 local HALF_X = 68
 local HALF_Z = 52
-local WALL_H = 22
+local WALL_H = 20
+local STAND_Y = 5
 
-local function part(props: { [string]: any }): BasePart
+local function part(props: { [string]: any }, parent: Instance?): BasePart
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.TopSurface = Enum.TopSurface.Smooth
@@ -35,7 +36,7 @@ local function part(props: { [string]: any }): BasePart
 	for k, v in props do
 		(p :: any)[k] = v
 	end
-	p.Parent = root
+	p.Parent = parent or root
 	return p
 end
 
@@ -69,22 +70,35 @@ function World.floorY(): number
 end
 
 function World.hrpHeight(): number
-	return FLOOR_TOP + 3.2
+	return STAND_Y
 end
 
 function World.contains(pos: Vector3): boolean
-	return math.abs(pos.X) < 85
-		and math.abs(pos.Z) < 85
-		and pos.Y > FLOOR_TOP - 6
-		and pos.Y < FLOOR_TOP + 50
+	return pos.Y > 2.2 and pos.Y < 40 and math.abs(pos.X) < 250 and math.abs(pos.Z) < 250
 end
 
 function World.safe(pos: Vector3): Vector3
 	return Vector3.new(
-		math.clamp(pos.X, -HALF_X + 8, HALF_X - 8),
-		math.clamp(pos.Y, FLOOR_TOP + 3.2, FLOOR_TOP + 8),
-		math.clamp(pos.Z, -HALF_Z + 8, HALF_Z - 8)
+		math.clamp(pos.X, -HALF_X + 10, HALF_X - 10),
+		STAND_Y,
+		math.clamp(pos.Z, -HALF_Z + 10, HALF_Z - 10)
 	)
+end
+
+function World.ensureGround()
+	local g = workspace:FindFirstChild("HighriseGround")
+	if g and g:IsA("BasePart") then
+		return g
+	end
+	-- Top face is y=0. Characters always have something to land on.
+	return part({
+		Name = "HighriseGround",
+		Size = Vector3.new(1024, 32, 1024),
+		Position = Vector3.new(0, -16, 0),
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(12, 14, 20),
+		CastShadow = false,
+	}, workspace)
 end
 
 function World.applyLighting()
@@ -94,9 +108,8 @@ function World.applyLighting()
 	Lighting.OutdoorAmbient = Color3.fromRGB(70, 74, 100)
 	Lighting.ColorShift_Top = Color3.fromRGB(255, 196, 140)
 	Lighting.ColorShift_Bottom = Color3.fromRGB(48, 56, 96)
-	Lighting.FogColor = Color3.fromRGB(24, 26, 44)
-	Lighting.FogStart = 220
-	Lighting.FogEnd = 1200
+	Lighting.FogStart = 250
+	Lighting.FogEnd = 1400
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.5
 	Lighting.EnvironmentDiffuseScale = 1
@@ -104,14 +117,12 @@ function World.applyLighting()
 	pcall(function()
 		Lighting.Technology = Enum.Technology.ShadowMap
 	end)
-
 	for _, n in ipairs({ "Atmosphere", "ColorCorrection", "Bloom", "DepthOfField", "Sky", "SunRaysEffect" }) do
 		local old = Lighting:FindFirstChild(n)
 		if old then
 			old:Destroy()
 		end
 	end
-
 	local atm = Instance.new("Atmosphere")
 	atm.Density = 0.05
 	atm.Offset = 0.3
@@ -120,24 +131,20 @@ function World.applyLighting()
 	atm.Glare = 0.2
 	atm.Haze = 0.18
 	atm.Parent = Lighting
-
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Brightness = 0.08
 	cc.Contrast = 0.04
 	cc.Saturation = 0.08
 	cc.TintColor = Color3.fromRGB(255, 244, 232)
 	cc.Parent = Lighting
-
 	local bloom = Instance.new("BloomEffect")
 	bloom.Intensity = 0.2
 	bloom.Size = 16
 	bloom.Threshold = 1.2
 	bloom.Parent = Lighting
-
 	local sky = Instance.new("Sky")
 	sky.CelestialBodiesShown = true
 	sky.StarCount = 2500
-	sky.SunAngularSize = 8
 	sky.MoonAngularSize = 12
 	sky.Parent = Lighting
 end
@@ -161,16 +168,10 @@ local function makeTask(name: string, pos: Vector3, color: Color3)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = t
 	table.insert(tasks, t)
-	wp(pos + Vector3.new(0, 2, 0))
+	wp(Vector3.new(pos.X, STAND_Y, pos.Z))
 end
 
 local function chandelier(pos: Vector3)
-	local stem = part({
-		Size = Vector3.new(0.35, 6, 0.35),
-		Position = pos + Vector3.new(0, 3, 0),
-		Material = Enum.Material.Metal,
-		Color = brass,
-	})
 	local bowl = part({
 		Size = Vector3.new(6, 0.55, 6),
 		Position = pos,
@@ -179,26 +180,15 @@ local function chandelier(pos: Vector3)
 		Transparency = 0.15,
 		Shape = Enum.PartType.Ball,
 	})
+	part({
+		Size = Vector3.new(0.35, 6, 0.35),
+		Position = pos + Vector3.new(0, 3, 0),
+		Material = Enum.Material.Metal,
+		Color = brass,
+	})
 	light(bowl, Color3.fromRGB(255, 220, 170), 5, 36)
-	light(stem, Color3.fromRGB(255, 200, 140), 1.6, 16)
 end
 
-local function column(x: number, z: number)
-	part({
-		Size = Vector3.new(1.6, WALL_H - 2, 1.6),
-		Position = Vector3.new(x, FLOOR_TOP + (WALL_H - 2) / 2, z),
-		Material = Enum.Material.Marble,
-		Color = marble,
-	})
-	part({
-		Size = Vector3.new(2.2, 0.45, 2.2),
-		Position = Vector3.new(x, FLOOR_TOP + WALL_H - 2, z),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-end
-
--- Wall with a centered doorway so rooms connect.
 local function wallDoor(size: Vector3, pos: Vector3, doorWidth: number, alongX: boolean)
 	if alongX then
 		local side = (size.X - doorWidth) / 2
@@ -211,12 +201,6 @@ local function wallDoor(size: Vector3, pos: Vector3, doorWidth: number, alongX: 
 		part({
 			Size = Vector3.new(side, size.Y, size.Z),
 			Position = pos + Vector3.new((doorWidth + side) / 2, 0, 0),
-			Material = Enum.Material.Marble,
-			Color = ivory,
-		})
-		part({
-			Size = Vector3.new(doorWidth, 4, size.Z),
-			Position = pos + Vector3.new(0, size.Y / 2 - 2, 0),
 			Material = Enum.Material.Marble,
 			Color = ivory,
 		})
@@ -234,18 +218,12 @@ local function wallDoor(size: Vector3, pos: Vector3, doorWidth: number, alongX: 
 			Material = Enum.Material.Marble,
 			Color = ivory,
 		})
-		part({
-			Size = Vector3.new(size.X, 4, doorWidth),
-			Position = pos + Vector3.new(0, size.Y / 2 - 2, 0),
-			Material = Enum.Material.Marble,
-			Color = ivory,
-		})
 	end
 end
 
 local function city()
 	local rng = Random.new(80)
-	for i = 1, 40 do
+	for i = 1, 36 do
 		local a = rng:NextNumber(0, math.pi * 2)
 		local r = rng:NextNumber(140, 300)
 		local h = rng:NextNumber(50, 180)
@@ -276,6 +254,8 @@ local function city()
 end
 
 function World.build()
+	World.ensureGround()
+
 	local existing = workspace:FindFirstChild("Highrise")
 	if existing then
 		existing:Destroy()
@@ -287,21 +267,10 @@ function World.build()
 	spawns = {}
 	tasks = {}
 
-	-- Solid bedrock: you cannot fall through this.
-	part({
-		Name = "Bedrock",
-		Size = Vector3.new(420, 40, 420),
-		Position = Vector3.new(0, FLOOR_TOP - 20, 0),
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(10, 12, 18),
-		CastShadow = false,
-	})
-
-	-- Marble playable floor on top of bedrock
 	part({
 		Name = "Floor",
-		Size = Vector3.new(HALF_X * 2, 2, HALF_Z * 2),
-		Position = Vector3.new(0, FLOOR_TOP - 1, 0),
+		Size = Vector3.new(HALF_X * 2, 1, HALF_Z * 2),
+		Position = Vector3.new(0, FLOOR_TOP - 0.5, 0),
 		Material = Enum.Material.Marble,
 		Color = marble,
 	})
@@ -312,7 +281,6 @@ function World.build()
 		Color = carpet,
 	})
 
-	-- Ceiling
 	local ceiling = part({
 		Name = "Ceiling",
 		Size = Vector3.new(HALF_X * 2, 2, HALF_Z * 2),
@@ -328,7 +296,6 @@ function World.build()
 	downLight.Color = Color3.fromRGB(255, 226, 190)
 	downLight.Parent = ceiling
 
-	-- Outer envelope (sealed). North face is glass so the city is visible.
 	part({
 		Name = "WallS",
 		Size = Vector3.new(HALF_X * 2, WALL_H, 3),
@@ -360,42 +327,17 @@ function World.build()
 		Reflectance = 0.28,
 	})
 
-	-- Invisible outer cage, taller than jump height
-	local cageH = 60
-	local cage = {
-		{ Vector3.new(180, cageH, 4), Vector3.new(0, FLOOR_TOP + cageH / 2, 90) },
-		{ Vector3.new(180, cageH, 4), Vector3.new(0, FLOOR_TOP + cageH / 2, -90) },
-		{ Vector3.new(4, cageH, 180), Vector3.new(90, FLOOR_TOP + cageH / 2, 0) },
-		{ Vector3.new(4, cageH, 180), Vector3.new(-90, FLOOR_TOP + cageH / 2, 0) },
-	}
-	for i, w in ipairs(cage) do
-		part({
-			Name = "Cage" .. i,
-			Size = w[1],
-			Position = w[2],
-			Transparency = 1,
-			CanCollide = true,
-			CastShadow = false,
-		})
-	end
+	wallDoor(Vector3.new(2, 14, 36), Vector3.new(-30, FLOOR_TOP + 7, -4), 10, false)
+	wallDoor(Vector3.new(2, 14, 36), Vector3.new(30, FLOOR_TOP + 7, -4), 10, false)
+	wallDoor(Vector3.new(36, 14, 2), Vector3.new(0, FLOOR_TOP + 7, -22), 12, true)
 
-	-- Interior rooms with doorways
-	wallDoor(Vector3.new(2, 16, 40), Vector3.new(-30, FLOOR_TOP + 8, -6), 10, false)
-	wallDoor(Vector3.new(2, 16, 40), Vector3.new(30, FLOOR_TOP + 8, -6), 10, false)
-	wallDoor(Vector3.new(40, 16, 2), Vector3.new(0, FLOOR_TOP + 8, -24), 12, true)
+	chandelier(Vector3.new(0, FLOOR_TOP + 14, 0))
+	chandelier(Vector3.new(-38, FLOOR_TOP + 14, -12))
+	chandelier(Vector3.new(38, FLOOR_TOP + 14, -12))
+	chandelier(Vector3.new(0, FLOOR_TOP + 14, 24))
+	chandelier(Vector3.new(0, FLOOR_TOP + 14, -32))
 
-	for x = -16, 16, 16 do
-		column(x, -16)
-		column(x, 16)
-	end
-
-	chandelier(Vector3.new(0, FLOOR_TOP + 16, 0))
-	chandelier(Vector3.new(-38, FLOOR_TOP + 16, -14))
-	chandelier(Vector3.new(38, FLOOR_TOP + 16, -14))
-	chandelier(Vector3.new(0, FLOOR_TOP + 16, 28))
-	chandelier(Vector3.new(0, FLOOR_TOP + 16, -36))
-
-	for z = -36, 28, 16 do
+	for z = -32, 24, 16 do
 		local strip = part({
 			Size = Vector3.new(80, 0.2, 0.5),
 			Position = Vector3.new(0, FLOOR_TOP + WALL_H - 1.2, z),
@@ -405,64 +347,36 @@ function World.build()
 		})
 		light(strip, Color3.fromRGB(255, 220, 170), 1.8, 24)
 	end
-
-	local fill = part({
+	light(part({
 		Name = "FillLight",
 		Size = Vector3.new(1, 1, 1),
-		Position = Vector3.new(0, FLOOR_TOP + 12, 0),
+		Position = Vector3.new(0, FLOOR_TOP + 10, 0),
 		Transparency = 1,
 		CanCollide = false,
 		CastShadow = false,
-	})
-	light(fill, Color3.fromRGB(255, 230, 200), 3.2, 80)
+	}), Color3.fromRGB(255, 230, 200), 3.2, 80)
 
-	-- Indoor pool (walkable glass, not a hole)
-	part({
-		Name = "PoolDeck",
-		Size = Vector3.new(44, 0.4, 18),
-		Position = Vector3.new(0, FLOOR_TOP + 0.25, 34),
-		Material = Enum.Material.SmoothPlastic,
-		Color = stone,
-	})
 	local pool = part({
 		Name = "Pool",
-		Size = Vector3.new(32, 0.4, 12),
-		Position = Vector3.new(0, FLOOR_TOP + 0.45, 34),
+		Size = Vector3.new(28, 0.4, 10),
+		Position = Vector3.new(0, FLOOR_TOP + 0.35, 32),
 		Material = Enum.Material.Glass,
 		Color = water,
 		Transparency = 0.3,
 		Reflectance = 0.4,
 	})
-	light(pool, Color3.fromRGB(70, 140, 180), 2.6, 22)
-	-- Rail around pool
-	for _, rz in ipairs({ 26, 42 }) do
-		part({
-			Size = Vector3.new(46, 3, 0.4),
-			Position = Vector3.new(0, FLOOR_TOP + 1.7, rz),
-			Material = Enum.Material.Metal,
-			Color = brass,
-		})
-	end
-	for _, rx in ipairs({ -22, 22 }) do
-		part({
-			Size = Vector3.new(0.4, 3, 16),
-			Position = Vector3.new(rx, FLOOR_TOP + 1.7, 34),
-			Material = Enum.Material.Metal,
-			Color = brass,
-		})
-	end
+	light(pool, Color3.fromRGB(70, 140, 180), 2.4, 20)
+	part({
+		Size = Vector3.new(36, 0.3, 14),
+		Position = Vector3.new(0, FLOOR_TOP + 0.2, 32),
+		Material = Enum.Material.SmoothPlastic,
+		Color = stone,
+	})
 
-	-- Lounge sofas
 	for i = -1, 1 do
 		part({
 			Size = Vector3.new(8, 1.4, 3.2),
 			Position = Vector3.new(i * 12, FLOOR_TOP + 0.85, 8),
-			Material = Enum.Material.Fabric,
-			Color = wine,
-		})
-		part({
-			Size = Vector3.new(8, 2.2, 0.5),
-			Position = Vector3.new(i * 12, FLOOR_TOP + 1.6, 9.4),
 			Material = Enum.Material.Fabric,
 			Color = wine,
 		})
@@ -473,31 +387,17 @@ function World.build()
 		Material = Enum.Material.Marble,
 		Color = ivory,
 	})
-	part({
-		Size = Vector3.new(4, 0.2, 4),
-		Position = Vector3.new(0, FLOOR_TOP + 0.75, 2),
-		Material = Enum.Material.Metal,
-		Color = brass,
-	})
 
-	-- Gallery paintings (west room)
 	for i = 1, 4 do
-		local z = -20 + i * 8
+		local z = -16 + i * 8
 		part({
 			Size = Vector3.new(0.3, 6, 4.5),
-			Position = Vector3.new(-66.4, FLOOR_TOP + 9, z),
+			Position = Vector3.new(-66.4, FLOOR_TOP + 8, z),
 			Material = Enum.Material.SmoothPlastic,
 			Color = Color3.fromRGB(20 + i * 12, 16, 28),
 		})
-		part({
-			Size = Vector3.new(0.2, 6.4, 4.9),
-			Position = Vector3.new(-66.2, FLOOR_TOP + 9, z),
-			Material = Enum.Material.Metal,
-			Color = brass,
-		})
 	end
 
-	-- Kitchen (east)
 	part({
 		Size = Vector3.new(16, 2.2, 4),
 		Position = Vector3.new(48, FLOOR_TOP + 1.2, -8),
@@ -510,17 +410,7 @@ function World.build()
 		Material = Enum.Material.Marble,
 		Color = marble,
 	})
-	for i = 0, 3 do
-		part({
-			Size = Vector3.new(0.8, 1.6, 0.8),
-			Position = Vector3.new(42 + i * 4, FLOOR_TOP + 3.4, -8),
-			Material = Enum.Material.Glass,
-			Color = wine,
-			Transparency = 0.25,
-		})
-	end
 
-	-- Elevators (south, decorative, solid)
 	for i = -1, 1 do
 		part({
 			Size = Vector3.new(8, 14, 1),
@@ -528,74 +418,58 @@ function World.build()
 			Material = Enum.Material.Metal,
 			Color = brass,
 		})
-		part({
-			Size = Vector3.new(6, 12, 0.4),
-			Position = Vector3.new(i * 12, FLOOR_TOP + 7, -HALF_Z + 2.6),
-			Material = Enum.Material.SmoothPlastic,
-			Color = ink,
-		})
-		light(part({
-			Size = Vector3.new(1, 0.3, 0.3),
-			Position = Vector3.new(i * 12, FLOOR_TOP + 14, -HALF_Z + 3),
-			Material = Enum.Material.Neon,
-			Color = gold,
-		}), gold, 2, 10)
 	end
 
-	local sign = part({
+	light(part({
 		Name = "Sign",
 		Size = Vector3.new(28, 3.2, 0.4),
-		Position = Vector3.new(0, FLOOR_TOP + 17, HALF_Z - 1.4),
+		Position = Vector3.new(0, FLOOR_TOP + 16, HALF_Z - 1.4),
 		Material = Enum.Material.Neon,
 		Color = gold,
 		CanCollide = false,
-	})
-	light(sign, gold, 3, 32)
+	}), gold, 3, 32)
 
-	local hrpY = World.hrpHeight()
-	makeTask("Guest book", Vector3.new(-40, FLOOR_TOP + 0.7, -14), brass)
-	makeTask("Wine cellar", Vector3.new(46, FLOOR_TOP + 0.7, -20), wine)
-	makeTask("Piano", Vector3.new(-46, FLOOR_TOP + 0.7, 18), ivory)
-	makeTask("Fuse box", Vector3.new(40, FLOOR_TOP + 0.7, 18), Color3.fromRGB(80, 80, 90))
-	makeTask("Vault keypad", Vector3.new(50, FLOOR_TOP + 0.7, -36), gold)
+	makeTask("Guest book", Vector3.new(-40, FLOOR_TOP + 0.7, -12), brass)
+	makeTask("Wine cellar", Vector3.new(46, FLOOR_TOP + 0.7, -18), wine)
+	makeTask("Piano", Vector3.new(-46, FLOOR_TOP + 0.7, 16), ivory)
+	makeTask("Fuse box", Vector3.new(40, FLOOR_TOP + 0.7, 16), Color3.fromRGB(80, 80, 90))
+	makeTask("Vault keypad", Vector3.new(50, FLOOR_TOP + 0.7, -32), gold)
 
 	part({
 		Size = Vector3.new(8, 1.8, 3.4),
-		Position = Vector3.new(-46, FLOOR_TOP + 1.05, 22),
+		Position = Vector3.new(-46, FLOOR_TOP + 1.05, 20),
 		Material = Enum.Material.SmoothPlastic,
 		Color = ink,
 	})
 
-	-- Spawn ring in the open hall (all inside the box)
-	for i = 1, 8 do
-		local a = (i / 8) * math.pi * 2
-		local s = Vector3.new(math.cos(a) * 10, hrpY, math.sin(a) * 8)
-		table.insert(spawns, s)
-		wp(s)
-	end
-	wp(Vector3.new(0, hrpY, 20))
-	wp(Vector3.new(-40, hrpY, -12))
-	wp(Vector3.new(40, hrpY, -12))
-	wp(Vector3.new(-40, hrpY, 16))
-	wp(Vector3.new(40, hrpY, 16))
-	wp(Vector3.new(0, hrpY, -32))
-	wp(Vector3.new(-20, hrpY, 0))
-	wp(Vector3.new(20, hrpY, 0))
-
-	city()
-
-	-- Visible spawn disc
 	part({
 		Name = "SpawnPad",
-		Size = Vector3.new(14, 0.3, 14),
+		Size = Vector3.new(16, 0.35, 16),
 		Position = Vector3.new(0, FLOOR_TOP + 0.2, 0),
 		Material = Enum.Material.Metal,
 		Color = brass,
 	})
 
-	World.LobbySpawn = Vector3.new(0, hrpY, 0)
+	for i = 1, 8 do
+		local a = (i / 8) * math.pi * 2
+		local s = Vector3.new(math.cos(a) * 10, STAND_Y, math.sin(a) * 8)
+		table.insert(spawns, s)
+		wp(s)
+	end
+	wp(Vector3.new(0, STAND_Y, 18))
+	wp(Vector3.new(-36, STAND_Y, -10))
+	wp(Vector3.new(36, STAND_Y, -10))
+	wp(Vector3.new(-36, STAND_Y, 14))
+	wp(Vector3.new(36, STAND_Y, 14))
+	wp(Vector3.new(0, STAND_Y, -28))
+	wp(Vector3.new(-18, STAND_Y, 0))
+	wp(Vector3.new(18, STAND_Y, 0))
+
+	city()
+
+	World.LobbySpawn = Vector3.new(0, STAND_Y, 0)
 end
 
-World.LobbySpawn = Vector3.new(0, 13.2, 0)
+World.LobbySpawn = Vector3.new(0, STAND_Y, 0)
 
 return World

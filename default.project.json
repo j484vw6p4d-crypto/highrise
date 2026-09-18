@@ -24,8 +24,7 @@
     },
     "Workspace": {
       "$className": "Workspace",
-      "$ignoreUnknownInstances": true,
-      "Highrise": { "$path": "src/map/Highrise.model.json" }
+      "$ignoreUnknownInstances": true
     },
     "Lighting": {
       "$className": "Lighting",

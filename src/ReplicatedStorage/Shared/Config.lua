@@ -1,12 +1,12 @@
 --!strict
 local Config = {
 	Title = "Highrise",
-	BuildId = "HR-15",
+	BuildId = "HR-16",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 22,
+	LobbySeconds = 25,
 	RevealSeconds = 5,
-	RoundSeconds = 140,
+	RoundSeconds = 150,
 	GraceSeconds = 8,
 	BotFillTo = 4,
 	MinPlayersToStart = 1,

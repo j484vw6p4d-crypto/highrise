@@ -15,6 +15,8 @@ local NAMES = {
 	"TaskDo",
 	"PickupGun",
 	"RequestState",
+	"OpenShop",
+	"BoardData",
 }
 
 local cache: { [string]: RemoteEvent } = {}

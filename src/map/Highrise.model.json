@@ -7,8 +7,8 @@
       "Properties": {
         "Anchored": true,
         "CanCollide": true,
-        "Size": [220, 8, 220],
-        "CFrame": [0, 0, 20, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Size": [240, 8, 260],
+        "CFrame": [0, 0, 40, 1, 0, 0, 0, 1, 0, 0, 0, 1],
         "Color": [0.22, 0.2, 0.18],
         "Material": "Slate"
       }

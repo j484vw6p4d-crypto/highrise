@@ -25,7 +25,7 @@ local state = {
 	owned = {} :: { string },
 	equipped = Shop.defaults(),
 	passes = {} :: { [string]: boolean },
-	objective = "Shop, then wait for the night to start.",
+	objective = "Street lobby — shop, boards, then the night starts.",
 	aliveCount = 0,
 }
 local lastSync = os.clock()
@@ -367,6 +367,11 @@ shopBtn.MouseButton1Click:Connect(function()
 end)
 shopClose.MouseButton1Click:Connect(function()
 	shop.Visible = false
+end)
+
+Remotes.get("OpenShop").OnClientEvent:Connect(function()
+	shop.Visible = true
+	rebuildShop()
 end)
 
 local function notify(msg: string)

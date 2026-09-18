@@ -73,7 +73,7 @@ function World.hrpHeight(): number
 end
 
 function World.contains(pos: Vector3): boolean
-	return pos.Y > 3 and pos.Y < 36 and math.abs(pos.X) < 50 and pos.Z > -30 and pos.Z < 90
+	return pos.Y > 3 and pos.Y < 36 and math.abs(pos.X) < 55 and pos.Z > -30 and pos.Z < 110
 end
 
 function World.safe(pos: Vector3): Vector3
@@ -124,7 +124,7 @@ function World.build()
 	tasks = {}
 
 	-- Giant catch so you cannot fall even if Rojo stacks parts.
-	box("Catch", Vector3.new(220, 8, 220), Vector3.new(0, 0, 20), Color3.fromRGB(48, 44, 40), Enum.Material.Slate, map)
+	box("Catch", Vector3.new(240, 8, 260), Vector3.new(0, 0, 40), Color3.fromRGB(48, 44, 40), Enum.Material.Slate, map)
 
 	-- Outdoor lobby plaza in front of the mansion (look toward -Z at the facade).
 	box("Plaza", Vector3.new(72, 2, 56), Vector3.new(0, 5, 52), stone, Enum.Material.Cobblestone, map)
@@ -139,6 +139,76 @@ function World.build()
 			light(lamp, Color3.fromRGB(255, 210, 150), 2.5, 20)
 		end
 	end
+
+	-- Street in front of the plaza
+	box("Street", Vector3.new(90, 1, 28), Vector3.new(0, 5.1, 78), Color3.fromRGB(28, 28, 32), Enum.Material.Asphalt, map)
+	box("CurbL", Vector3.new(2, 1.2, 28), Vector3.new(-44, 5.7, 78), stone, Enum.Material.Slate, map)
+	box("CurbR", Vector3.new(2, 1.2, 28), Vector3.new(44, 5.7, 78), stone, Enum.Material.Slate, map)
+	box("FarShopA", Vector3.new(22, 14, 8), Vector3.new(-22, 13, 94), Color3.fromRGB(48, 36, 40), Enum.Material.Brick, map)
+	box("FarShopB", Vector3.new(22, 14, 8), Vector3.new(22, 13, 94), Color3.fromRGB(36, 40, 52), Enum.Material.Brick, map)
+	local night = box("NightSign", Vector3.new(18, 3, 0.5), Vector3.new(0, 16, 90), gold, Enum.Material.Neon, map)
+	night.CanCollide = false
+	light(night, gold, 4, 28)
+	if not night:FindFirstChild("SignGui") then
+		local ng = Instance.new("SurfaceGui")
+		ng.Name = "SignGui"
+		ng.Face = Enum.NormalId.Back
+		ng.Parent = night
+		local nlab = Instance.new("TextLabel")
+		nlab.BackgroundTransparency = 1
+		nlab.Size = UDim2.fromScale(1, 1)
+		nlab.Font = Enum.Font.GothamBlack
+		nlab.Text = "80TH STREET"
+		nlab.TextColor3 = ink
+		nlab.TextScaled = true
+		nlab.Parent = ng
+	end
+
+	-- Atelier shop
+	box("ShopFloor", Vector3.new(16, 1, 14), Vector3.new(26, 6.2, 50), wood, Enum.Material.Wood, map)
+	box("ShopAwning", Vector3.new(16, 0.5, 14), Vector3.new(26, 13, 50), wine, Enum.Material.Fabric, map)
+	box("ShopPostA", Vector3.new(0.7, 7, 0.7), Vector3.new(19, 9.5, 44), brass, Enum.Material.Metal, map)
+	box("ShopPostB", Vector3.new(0.7, 7, 0.7), Vector3.new(33, 9.5, 44), brass, Enum.Material.Metal, map)
+	box("ShopCounter", Vector3.new(10, 3, 2), Vector3.new(26, 7.6, 46), wood, Enum.Material.Wood, map)
+	local shopSign = box("ShopSign", Vector3.new(10, 2.2, 0.4), Vector3.new(26, 14.2, 44), gold, Enum.Material.Neon, map)
+	shopSign.CanCollide = false
+	light(shopSign, gold, 3, 18)
+	if not shopSign:FindFirstChild("SignGui") then
+		local sgui = Instance.new("SurfaceGui")
+		sgui.Name = "SignGui"
+		sgui.Face = Enum.NormalId.Back
+		sgui.Parent = shopSign
+		local slab = Instance.new("TextLabel")
+		slab.BackgroundTransparency = 1
+		slab.Size = UDim2.fromScale(1, 1)
+		slab.Font = Enum.Font.GothamBlack
+		slab.Text = "ATELIER"
+		slab.TextColor3 = ink
+		slab.TextScaled = true
+		slab.Parent = sgui
+	end
+	local clerk = box("ShopClerk", Vector3.new(2, 4, 1), Vector3.new(26, 8.4, 52), Color3.fromRGB(16, 16, 18), Enum.Material.SmoothPlastic, map)
+	clerk.CanCollide = false
+	if not clerk:FindFirstChild("OpenShop") then
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "OpenShop"
+		prompt.ActionText = "Open shop"
+		prompt.ObjectText = "Atelier"
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 12
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = clerk
+	end
+
+	local bw = box("BoardWins", Vector3.new(0.6, 16, 12), Vector3.new(-38, 14, 42), ink, Enum.Material.SmoothPlastic, map)
+	bw.CFrame = CFrame.new(-38, 14, 42) * CFrame.Angles(0, math.rad(90), 0)
+	local bk = box("BoardKills", Vector3.new(0.6, 16, 12), Vector3.new(-38, 14, 58), ink, Enum.Material.SmoothPlastic, map)
+	bk.CFrame = CFrame.new(-38, 14, 58) * CFrame.Angles(0, math.rad(90), 0)
+	local br = box("BoardRobux", Vector3.new(0.6, 16, 12), Vector3.new(38, 14, 42), ink, Enum.Material.SmoothPlastic, map)
+	br.CFrame = CFrame.new(38, 14, 42) * CFrame.Angles(0, math.rad(-90), 0)
+	box("PodiumWins", Vector3.new(4, 1, 4), Vector3.new(-34, 6.6, 42), gold, Enum.Material.Metal, map)
+	box("PodiumKills", Vector3.new(4, 1, 4), Vector3.new(-34, 6.6, 58), Color3.fromRGB(220, 80, 90), Enum.Material.Metal, map)
+	box("PodiumRobux", Vector3.new(4, 1, 4), Vector3.new(34, 6.6, 42), Color3.fromRGB(120, 220, 140), Enum.Material.Metal, map)
 
 	-- Mansion interior
 	box("InteriorFloor", Vector3.new(48, 2, 48), Vector3.new(0, 5, 0), wood, Enum.Material.Wood, map)
@@ -234,6 +304,9 @@ function World.build()
 	end
 	table.insert(waypoints, Vector3.new(0, STAND, 58))
 	table.insert(waypoints, Vector3.new(0, STAND, 40))
+	table.insert(waypoints, Vector3.new(26, STAND, 48))
+	table.insert(waypoints, Vector3.new(-20, STAND, 50))
+	table.insert(waypoints, Vector3.new(0, STAND, 78))
 	World.LobbySpawn = Vector3.new(0, STAND, 58)
 
 	local spawnInst = map:FindFirstChild("LobbySpawn")

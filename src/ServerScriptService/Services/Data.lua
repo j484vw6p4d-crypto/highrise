@@ -9,6 +9,7 @@ export type Profile = {
 	coins: number,
 	wins: number,
 	kills: number,
+	robuxSpent: number,
 	owned: { string },
 	equipped: { [string]: string },
 }
@@ -26,6 +27,7 @@ local function fresh(): Profile
 		coins = 0,
 		wins = 0,
 		kills = 0,
+		robuxSpent = 0,
 		owned = { "suit_black", "knife_steel", "gun_gold" },
 		equipped = eq,
 	}
@@ -66,12 +68,15 @@ function Data.load(player: Player)
 		p.coins = data.coins or 0
 		p.wins = data.wins or 0
 		p.kills = data.kills or 0
+		p.robuxSpent = data.robuxSpent or 0
 		p.owned = data.owned or p.owned
 		p.equipped = data.equipped or p.equipped
 	end
 	cache[player.UserId] = p
 	player:SetAttribute("Coins", p.coins)
 	player:SetAttribute("Wins", p.wins)
+	player:SetAttribute("Kills", p.kills)
+	player:SetAttribute("RobuxSpent", p.robuxSpent)
 end
 
 function Data.save(player: Player)
@@ -89,6 +94,12 @@ function Data.addCoins(player: Player, amount: number)
 	local p = Data.get(player.UserId)
 	p.coins += math.max(0, math.floor(amount))
 	player:SetAttribute("Coins", p.coins)
+end
+
+function Data.addRobux(player: Player, amount: number)
+	local p = Data.get(player.UserId)
+	p.robuxSpent += math.max(0, math.floor(amount))
+	player:SetAttribute("RobuxSpent", p.robuxSpent)
 end
 
 Players.PlayerRemoving:Connect(function(player)

@@ -62,6 +62,7 @@ local function grantProduct(player: Player, product): boolean
 		return false
 	end
 	Data.addCoins(player, product.coins)
+	Data.addRobux(player, product.robux or 0)
 	Remotes.get("Notify"):FireClient(player, "Purchased " .. product.name)
 	Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
 	return true
@@ -69,6 +70,7 @@ end
 
 local function grantPass(player: Player, pass)
 	player:SetAttribute("Dev_" .. pass.key, true)
+	Data.addRobux(player, pass.robux or 0)
 	if pass.key == "vip" then
 		local profile = Data.get(player.UserId)
 		Data.grant(profile, "suit_gold")

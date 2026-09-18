@@ -96,7 +96,7 @@ end
 
 local function objectiveFor(player: Player): string
 	if phase == "Lobby" then
-		return "Shop, then wait for the night to start."
+		return "Street lobby — shop, boards, then the night starts."
 	end
 	if phase == "Reveal" then
 		return "Remember your role."
@@ -360,6 +360,9 @@ function Round.endRound(winner: string)
 			end
 			Data.addCoins(plr, pay * Monetization.coinMultiplier(plr))
 			plr:SetAttribute("Wins", prof.wins)
+			pcall(function()
+				require(script.Parent.Boards).submit(plr)
+			end)
 			Remotes.get("Profile"):FireClient(plr, prof, Monetization.snapshot(plr))
 		end
 	end

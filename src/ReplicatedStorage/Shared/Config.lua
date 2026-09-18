@@ -1,10 +1,10 @@
 --!strict
 local Config = {
 	Title = "Highrise",
-	BuildId = "HR-12",
+	BuildId = "HR-13",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 8,
+	LobbySeconds = 20,
 	RevealSeconds = 5,
 	RoundSeconds = 120,
 	GraceSeconds = 8,

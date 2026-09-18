@@ -25,6 +25,7 @@ local World = require(script.Parent.Services.World)
 local Data = require(script.Parent.Services.Data)
 local Monetization = require(script.Parent.Services.Monetization)
 local Round = require(script.Parent.Services.Round)
+local Boards = require(script.Parent.Services.Boards)
 
 Remotes.init()
 
@@ -88,6 +89,15 @@ task.spawn(function()
 			p.Parent = workspace
 		end
 		sinkDefaults()
+		local map = workspace:FindFirstChild("Highrise")
+		local clerk = map and map:FindFirstChild("ShopClerk")
+		local prompt = clerk and clerk:FindFirstChild("OpenShop")
+		if prompt and prompt:IsA("ProximityPrompt") and not prompt:GetAttribute("Hooked") then
+			prompt:SetAttribute("Hooked", true)
+			prompt.Triggered:Connect(function(plr)
+				Remotes.get("OpenShop"):FireClient(plr)
+			end)
+		end
 		for _, plr in ipairs(Players:GetPlayers()) do
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -120,6 +130,7 @@ StarterPlayer.CharacterJumpPower = Config.JumpPower
 StarterGui.ResetPlayerGuiOnSpawn = false
 
 Monetization.start()
+Boards.start()
 
 local function pushProfile(player: Player)
 	Remotes.get("Profile"):FireClient(player, Data.get(player.UserId), Monetization.snapshot(player))
@@ -140,11 +151,18 @@ local function setupPlayer(player: Player)
 		wins.Name = "Wins"
 		wins.Value = Data.get(player.UserId).wins
 		wins.Parent = ls
+		local robux = Instance.new("IntValue")
+		robux.Name = "Robux"
+		robux.Value = Data.get(player.UserId).robuxSpent
+		robux.Parent = ls
 		player:GetAttributeChangedSignal("Coins"):Connect(function()
 			coins.Value = player:GetAttribute("Coins") or 0
 		end)
 		player:GetAttributeChangedSignal("Wins"):Connect(function()
 			wins.Value = player:GetAttribute("Wins") or 0
+		end)
+		player:GetAttributeChangedSignal("RobuxSpent"):Connect(function()
+			robux.Value = player:GetAttribute("RobuxSpent") or 0
 		end)
 	end
 	pushProfile(player)

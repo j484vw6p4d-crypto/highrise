@@ -24,22 +24,27 @@ end)
 World.applyLighting()
 World.build()
 
-local function wipeDefaults()
-	local kill = {}
+local function sinkDefaults()
 	for _, inst in ipairs(workspace:GetDescendants()) do
-		if inst.Name == "Baseplate" or inst.Name == "Spawn" then
-			table.insert(kill, inst)
+		if inst.Name == "Baseplate" and inst:IsA("BasePart") then
+			inst.CFrame = CFrame.new(0, -400, 0)
+			inst.Anchored = true
+			inst.CanCollide = false
+			inst.Transparency = 1
 		elseif inst:IsA("SpawnLocation") and inst.Name ~= "LobbySpawn" then
-			table.insert(kill, inst)
+			inst.Enabled = false
+			inst.Neutral = false
+			inst.CanCollide = false
+			inst.Transparency = 1
+			inst.CFrame = CFrame.new(0, -400, 0)
 		end
 	end
-	for _, inst in ipairs(kill) do
-		inst:Destroy()
-	end
 end
-wipeDefaults()
 
 local function putOnFloor(char: Model)
+	if not workspace:FindFirstChild("Highrise") then
+		World.build()
+	end
 	local dest = CFrame.new(World.LobbySpawn)
 	pcall(function()
 		char:PivotTo(dest)
@@ -48,8 +53,29 @@ local function putOnFloor(char: Model)
 	if hrp then
 		hrp.CFrame = dest
 		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
 	end
 end
+
+sinkDefaults()
+
+-- Rojo playtest often wipes Workspace after scripts first run. Rebuild until it sticks.
+task.spawn(function()
+	for _ = 1, 40 do
+		if not workspace:FindFirstChild("Highrise") then
+			World.build()
+		end
+		sinkDefaults()
+		for _, p in ipairs(Players:GetPlayers()) do
+			local char = p.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if hrp and hrp:IsA("BasePart") and not World.contains(hrp.Position) then
+				putOnFloor(char)
+			end
+		end
+		task.wait(0.25)
+	end
+end)
 
 for _, p in ipairs(Players:GetPlayers()) do
 	if p.Character then

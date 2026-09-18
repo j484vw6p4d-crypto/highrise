@@ -1,12 +1,12 @@
 --!strict
 local Config = {
 	Title = "Highrise",
-	BuildId = "HR-14",
+	BuildId = "HR-15",
 	Tagline = "Black-tie murder on the 80th floor.",
 
-	LobbySeconds = 20,
+	LobbySeconds = 22,
 	RevealSeconds = 5,
-	RoundSeconds = 120,
+	RoundSeconds = 140,
 	GraceSeconds = 8,
 	BotFillTo = 4,
 	MinPlayersToStart = 1,
@@ -17,8 +17,8 @@ local Config = {
 	WalkMurderer = 18,
 	JumpPower = 40,
 
-	KnifeRange = 7,
-	KnifeCooldown = 0.85,
+	KnifeRange = 7.5,
+	KnifeCooldown = 0.8,
 	GunRange = 180,
 	GunReload = 3.2,
 	GunSpread = 0.012,

@@ -23,6 +23,8 @@ local knifeCd: { [string]: number } = {}
 local gunDropped: BasePart? = nil
 local sheriffId: string? = nil
 local murdererId: string? = nil
+local weaponsAt = 0
+local dyingLock: { [string]: boolean } = {}
 
 local function keyOf(actor: Actor): string
 	if typeof(actor) == "Instance" and actor:IsA("Player") then
@@ -82,30 +84,67 @@ local function remaining(): number
 	return math.max(0, math.ceil(deadline - os.clock()))
 end
 
+local function aliveCount(): number
+	local n = 0
+	for _, on in pairs(alive) do
+		if on then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function objectiveFor(player: Player): string
+	if phase == "Lobby" then
+		return "Shop, then wait for the night to start."
+	end
+	if phase == "Reveal" then
+		return "Remember your role."
+	end
+	if phase == "Over" then
+		return "Next night incoming."
+	end
+	if os.clock() < weaponsAt then
+		return "Grace — weapons live in a moment."
+	end
+	local role = roles[keyOf(player)]
+	if role == "Murderer" then
+		return "Knife the guests. Don't get shot."
+	end
+	if role == "Sheriff" then
+		return "Shoot only the murderer. One round."
+	end
+	return "Survive. Finish tasks. Pick up the gun if it drops."
+end
+
 local function pushState(extra: { [string]: any }?, toPlayer: Player?)
 	local payload = {
 		phase = phase,
 		remaining = remaining(),
 		endsAt = os.time() + remaining(),
 		alive = alive,
+		aliveCount = aliveCount(),
 		rolesHidden = phase ~= "Reveal" and phase ~= "Round" and phase ~= "Over",
 		title = Config.Title,
+		grace = os.clock() < weaponsAt,
 	}
 	if extra then
 		for k, v in extra do
 			payload[k] = v
 		end
 	end
-	if toPlayer then
-		Remotes.get("RoundState"):FireClient(toPlayer, payload)
-		local k = keyOf(toPlayer)
-		Remotes.get("RoleReveal"):FireClient(toPlayer, roles[k], phase)
-		return
-	end
-	Remotes.get("RoundState"):FireAllClients(payload)
-	for _, p in ipairs(Players:GetPlayers()) do
+	local function send(p: Player)
+		payload.objective = objectiveFor(p)
+		Remotes.get("RoundState"):FireClient(p, payload)
 		local k = keyOf(p)
 		Remotes.get("RoleReveal"):FireClient(p, roles[k], phase)
+	end
+	if toPlayer then
+		send(toPlayer)
+		return
+	end
+	for _, p in ipairs(Players:GetPlayers()) do
+		send(p)
 	end
 end
 
@@ -173,9 +212,18 @@ local function weldWeapon(actor: Actor, slot: string)
 end
 
 local function teleport(actor: Actor, pos: Vector3)
+	local char = characterOf(actor)
+	local dest = World.safe(pos)
+	if char then
+		pcall(function()
+			char:PivotTo(CFrame.new(dest))
+		end)
+	end
 	local hrp = hrpOf(actor)
 	if hrp then
-		hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+		hrp.CFrame = CFrame.new(dest)
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
 	end
 end
 
@@ -196,6 +244,10 @@ local function setSpeed(actor: Actor)
 		hum.WalkSpeed = Config.WalkLobby
 	end
 	hum.JumpPower = Config.JumpPower
+	pcall(function()
+		hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+		hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+	end)
 end
 
 local function dropGun(at: Vector3)
@@ -329,6 +381,9 @@ end
 
 function Round.attack(attacker: Actor, targetHint: any)
 	if phase ~= "Round" then
+		return
+	end
+	if os.clock() < weaponsAt then
 		return
 	end
 	local ak = keyOf(attacker)
@@ -473,7 +528,7 @@ function Round.beginPlay()
 	local spawns = World.spawns()
 	local i = 1
 	for _, actor in ipairs(allActors()) do
-		local pos = if #spawns > 0 then spawns[((i - 1) % #spawns) + 1] else Vector3.new(0, 185, 0)
+		local pos = if #spawns > 0 then spawns[((i - 1) % #spawns) + 1] else World.LobbySpawn
 		teleport(actor, pos)
 		applySuit(actor)
 		weldWeapon(actor, "held")
@@ -487,6 +542,7 @@ function Round.beginPlay()
 		end
 		i += 1
 	end
+	weaponsAt = os.clock() + Config.RevealSeconds + Config.GraceSeconds
 	pushState()
 	task.delay(Config.RevealSeconds, function()
 		if phase ~= "Reveal" then
@@ -497,7 +553,12 @@ function Round.beginPlay()
 		for _, actor in ipairs(allActors()) do
 			setSpeed(actor)
 		end
-		Bots.startBrain(Round.getRole, Round.attack, Round.attack)
+		task.delay(Config.GraceSeconds, function()
+			if phase == "Round" then
+				Bots.startBrain(Round.getRole, Round.attack, Round.attack)
+				pushState()
+			end
+		end)
 		pushState()
 	end)
 end
@@ -505,6 +566,8 @@ end
 function Round.lobby()
 	phase = "Lobby"
 	deadline = os.clock() + Config.LobbySeconds
+	weaponsAt = 0
+	table.clear(dyingLock)
 	Bots.stop()
 	pushState()
 	local need = math.max(0, Config.BotFillTo - #Players:GetPlayers())
@@ -524,11 +587,17 @@ function Round.lobby()
 end
 
 function Round.rescue()
-	local minY = World.floorY() - 8
 	for _, p in ipairs(Players:GetPlayers()) do
 		local hrp = hrpOf(p)
-		if hrp and hrp.Position.Y < minY then
+		if hrp and not World.contains(hrp.Position) then
 			teleport(p, World.LobbySpawn)
+		end
+	end
+	for _, m in ipairs(Bots.list()) do
+		local hrp = m:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if hrp and not World.contains(hrp.Position) then
+			hrp.CFrame = CFrame.new(World.safe(hrp.Position))
+			hrp.AssemblyLinearVelocity = Vector3.zero
 		end
 	end
 end
@@ -553,17 +622,55 @@ function Round.tick()
 end
 
 function Round.start()
+	local function bindHumanoid(player: Player, char: Model)
+		local hum = char:WaitForChild("Humanoid", 5)
+		if not hum or not hum:IsA("Humanoid") then
+			return
+		end
+		hum.Died:Connect(function()
+			local k = keyOf(player)
+			if dyingLock[k] then
+				return
+			end
+			if phase == "Round" and alive[k] then
+				dyingLock[k] = true
+				alive[k] = false
+				if roles[k] == "Sheriff" then
+					local hrp = hrpOf(player)
+					if hrp then
+						dropGun(hrp.Position)
+					end
+					sheriffId = nil
+				end
+				Remotes.get("Notify"):FireAllClients(player.DisplayName .. " has fallen.")
+				pushState()
+				Round.checkWin()
+				task.delay(1, function()
+					dyingLock[k] = false
+				end)
+			end
+		end)
+	end
+
 	local function onCharacter(player: Player)
-		task.wait(0.15)
-		if phase == "Lobby" or phase == "Over" or phase == "Reveal" then
-			teleport(player, World.LobbySpawn)
-		else
-			alive[keyOf(player)] = false
-			roles[keyOf(player)] = "Innocent"
+		task.wait(0.08)
+		local char = player.Character
+		if char then
+			bindHumanoid(player, char)
+		end
+		teleport(player, World.LobbySpawn)
+		if phase == "Round" then
+			alive[keyOf(player)] = alive[keyOf(player)] == true
+			if not alive[keyOf(player)] then
+				roles[keyOf(player)] = roles[keyOf(player)] or "Innocent"
+			end
 		end
 		applySuit(player)
 		setSpeed(player)
 		Monetization.applyNametag(player)
+		if phase == "Round" or phase == "Reveal" then
+			weldWeapon(player, "held")
+		end
 		pushState(nil, player)
 	end
 

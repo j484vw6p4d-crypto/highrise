@@ -21,7 +21,7 @@ local function randomWp(): Vector3
 	if #w == 0 then
 		return World.LobbySpawn
 	end
-	return w[math.random(1, #w)]
+	return World.safe(w[math.random(1, #w)])
 end
 
 local function limb(model: Model, name: string, size: Vector3, cf: CFrame, color: Color3): BasePart
@@ -31,8 +31,9 @@ local function limb(model: Model, name: string, size: Vector3, cf: CFrame, color
 	p.CFrame = cf
 	p.Color = color
 	p.Material = Enum.Material.SmoothPlastic
+	p.Massless = true
+	p.CanCollide = name == "HumanoidRootPart"
 	p.Anchored = false
-	p.CanCollide = name == "Torso" or name == "HumanoidRootPart"
 	p.Parent = model
 	return p
 end
@@ -48,7 +49,7 @@ end
 local function makeDummy(name: string, bodyColor: Color3, pos: Vector3): Model
 	local model = Instance.new("Model")
 	model.Name = name
-	local cf = CFrame.new(pos)
+	local cf = CFrame.new(World.safe(pos))
 	local hrp = limb(model, "HumanoidRootPart", Vector3.new(2, 2, 1), cf, bodyColor)
 	hrp.Transparency = 1
 	local torso = limb(model, "Torso", Vector3.new(2, 2, 1), cf, bodyColor)
@@ -94,8 +95,8 @@ function Bots.spawn(count: number)
 	local parent = workspace:FindFirstChild("Highrise") or workspace
 	for i = 1, count do
 		local color = COLORS[((i - 1) % #COLORS) + 1]
-		local spawns = World.spawns()
-		local pos = if #spawns > 0 then spawns[((i - 1) % #spawns) + 1] else World.LobbySpawn
+		local spawnList = World.spawns()
+		local pos = if #spawnList > 0 then spawnList[((i - 1) % #spawnList) + 1] else World.LobbySpawn
 		local model = makeDummy("Guest " .. NAMES[((i - 1) % #NAMES) + 1], color, pos)
 		model:SetAttribute("IsBot", true)
 		model:SetAttribute("BotIndex", i)
@@ -116,6 +117,10 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 				local hrp = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if not hum or hum.Health <= 0 or not hrp then
 					continue
+				end
+				if not World.contains(hrp.Position) then
+					hrp.CFrame = CFrame.new(World.safe(hrp.Position))
+					hrp.AssemblyLinearVelocity = Vector3.zero
 				end
 				local role = getRole(model)
 				local targetPos = randomWp()
@@ -151,18 +156,18 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 					end
 				end
 
-				if role == "Murderer" and nearest and nearestDist < 80 then
+				if role == "Murderer" and nearest and nearestDist < 50 then
 					local tpart = if typeof(nearest) == "Instance" and nearest:IsA("Player")
 						then nearest.Character and nearest.Character:FindFirstChild("HumanoidRootPart")
 						elseif typeof(nearest) == "Instance" then (nearest :: Model):FindFirstChild("HumanoidRootPart")
 						else nil
 					if tpart then
-						targetPos = (tpart :: BasePart).Position
+						targetPos = World.safe((tpart :: BasePart).Position)
 						if nearestDist < 7 then
 							attack(model, nearest)
 						end
 					end
-				elseif role == "Sheriff" and nearest and nearestDist < 70 then
+				elseif role == "Sheriff" and nearest and nearestDist < 55 then
 					local nRole = getRole(nearest)
 					if nRole == "Murderer" then
 						local tpart = if typeof(nearest) == "Instance" and nearest:IsA("Player")
@@ -170,13 +175,13 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 							elseif typeof(nearest) == "Instance" then (nearest :: Model):FindFirstChild("HumanoidRootPart")
 							else nil
 						if tpart then
-							targetPos = (tpart :: BasePart).Position
-							if nearestDist < 60 then
+							targetPos = World.safe((tpart :: BasePart).Position)
+							if nearestDist < 45 then
 								shoot(model, nearest)
 							end
 						end
 					end
-				elseif role == "Innocent" and nearest and nearestDist < 18 then
+				elseif role == "Innocent" and nearest and nearestDist < 16 then
 					local nRole = getRole(nearest)
 					if nRole == "Murderer" then
 						local nhrp: BasePart? = nil
@@ -189,14 +194,14 @@ function Bots.startBrain(getRole: (Model | Player) -> string, attack: (any, any)
 						if nhrp then
 							local away = hrp.Position - nhrp.Position
 							if away.Magnitude > 0.2 then
-								targetPos = hrp.Position + away.Unit * 24
+								targetPos = World.safe(hrp.Position + away.Unit * 20)
 							end
 						end
 					end
 				end
 
 				pcall(function()
-					hum:MoveTo(targetPos)
+					hum:MoveTo(World.safe(targetPos))
 				end)
 			end
 			task.wait(0.9)

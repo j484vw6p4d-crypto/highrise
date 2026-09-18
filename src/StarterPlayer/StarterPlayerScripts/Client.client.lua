@@ -25,6 +25,8 @@ local state = {
 	owned = {} :: { string },
 	equipped = Shop.defaults(),
 	passes = {} :: { [string]: boolean },
+	objective = "Shop, then wait for the night to start.",
+	aliveCount = 0,
 }
 local lastSync = os.clock()
 
@@ -45,14 +47,22 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = playerGui
 
 local function attachFill(char: Model)
+	local hum = char:WaitForChild("Humanoid", 8)
+	if hum and hum:IsA("Humanoid") then
+		pcall(function()
+			hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+			hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+		end)
+		hum.JumpPower = Config.JumpPower
+	end
 	local hrp = char:WaitForChild("HumanoidRootPart", 8)
 	if not hrp or hrp:FindFirstChild("HighriseFill") then
 		return
 	end
 	local l = Instance.new("PointLight")
 	l.Name = "HighriseFill"
-	l.Brightness = 1.4
-	l.Range = 30
+	l.Brightness = 1.2
+	l.Range = 28
 	l.Color = Color3.fromRGB(255, 226, 190)
 	l.Shadows = false
 	l.Parent = hrp
@@ -181,12 +191,36 @@ local coinsLab = mk("TextLabel", {
 
 local hint = mk("TextLabel", {
 	BackgroundTransparency = 1,
-	Position = UDim2.new(0.5, -200, 1, -90),
-	Size = UDim2.fromOffset(400, 24),
+	Position = UDim2.new(0.5, -260, 1, -96),
+	Size = UDim2.fromOffset(520, 24),
 	Font = Enum.Font.Gotham,
-	Text = "Click to attack  ·  E on tasks  ·  Shop bottom-right",
+	Text = "WASD move  ·  Click to attack  ·  E on tasks  ·  Shop bottom-right",
 	TextColor3 = muted,
 	TextSize = 13,
+}, gui) :: TextLabel
+
+local obj = mk("TextLabel", {
+	BackgroundColor3 = ink,
+	BackgroundTransparency = 0.25,
+	BorderSizePixel = 0,
+	Position = UDim2.new(0.5, -220, 0, 90),
+	Size = UDim2.fromOffset(440, 28),
+	Font = Enum.Font.Gotham,
+	Text = "Shop, then wait for the night to start.",
+	TextColor3 = ivory,
+	TextSize = 14,
+}, gui) :: TextLabel
+mk("UICorner", { CornerRadius = UDim.new(0, 10) }, obj)
+
+local aliveLab = mk("TextLabel", {
+	BackgroundTransparency = 1,
+	Position = UDim2.new(0, 20, 1, -72),
+	Size = UDim2.fromOffset(220, 22),
+	Font = Enum.Font.GothamMedium,
+	Text = "",
+	TextColor3 = muted,
+	TextSize = 14,
+	TextXAlignment = Enum.TextXAlignment.Left,
 }, gui) :: TextLabel
 
 local shopBtn = mk("TextButton", {
@@ -361,6 +395,14 @@ Remotes.get("RoundState").OnClientEvent:Connect(function(payload)
 		lastSync = os.clock()
 	end
 	state.winner = payload.winner
+	if typeof(payload.objective) == "string" then
+		state.objective = payload.objective
+		obj.Text = payload.objective
+	end
+	if typeof(payload.aliveCount) == "number" then
+		state.aliveCount = payload.aliveCount
+		aliveLab.Text = if state.phase == "Round" then (tostring(payload.aliveCount) .. " alive") else ""
+	end
 	phaseLab.Text = string.upper(state.phase)
 	if state.phase == "Over" and payload.winner then
 		notify(payload.winner .. " win the night.")

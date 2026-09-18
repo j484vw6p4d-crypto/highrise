@@ -22,6 +22,11 @@
         "$path": "src/StarterPlayer/StarterPlayerScripts"
       }
     },
+    "Workspace": {
+      "$className": "Workspace",
+      "$ignoreUnknownInstances": true,
+      "Highrise": { "$path": "src/map/Highrise.model.json" }
+    },
     "Lighting": {
       "$className": "Lighting",
       "$ignoreUnknownInstances": true

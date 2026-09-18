@@ -1,4 +1,18 @@
 --!strict
+do
+	local p = workspace:FindFirstChild("HR_CATCH")
+	if not p then
+		p = Instance.new("Part")
+		p.Name = "HR_CATCH"
+		p.Anchored = true
+		p.Size = Vector3.new(80, 4, 80)
+		p.CFrame = CFrame.new(0, 0, 0)
+		p.Material = Enum.Material.Wood
+		p.Color = Color3.fromRGB(72, 48, 32)
+		p.Parent = workspace
+	end
+end
+
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local StarterPlayer = game:GetService("StarterPlayer")
@@ -16,11 +30,10 @@ Remotes.init()
 
 pcall(function()
 	workspace.Gravity = 196.2
-	workspace.FallenPartsDestroyHeight = -500
+	workspace.FallenPartsDestroyHeight = -2000
 	workspace.StreamingEnabled = false
 end)
 
--- Floor FIRST. Never delete the Baseplate until there is something to stand on.
 World.applyLighting()
 World.build()
 
@@ -59,21 +72,30 @@ end
 
 sinkDefaults()
 
--- Rojo playtest often wipes Workspace after scripts first run. Rebuild until it sticks.
 task.spawn(function()
-	for _ = 1, 40 do
+	while true do
 		if not workspace:FindFirstChild("Highrise") then
-			World.build()
+			pcall(World.build)
+		end
+		if not workspace:FindFirstChild("HR_CATCH") then
+			local p = Instance.new("Part")
+			p.Name = "HR_CATCH"
+			p.Anchored = true
+			p.Size = Vector3.new(80, 4, 80)
+			p.CFrame = CFrame.new(0, 0, 0)
+			p.Material = Enum.Material.Wood
+			p.Color = Color3.fromRGB(72, 48, 32)
+			p.Parent = workspace
 		end
 		sinkDefaults()
-		for _, p in ipairs(Players:GetPlayers()) do
-			local char = p.Character
+		for _, plr in ipairs(Players:GetPlayers()) do
+			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:IsA("BasePart") and not World.contains(hrp.Position) then
+			if hrp and hrp:IsA("BasePart") and hrp.Position.Y < 3 then
 				putOnFloor(char)
 			end
 		end
-		task.wait(0.25)
+		task.wait(0.2)
 	end
 end)
 

@@ -18,9 +18,26 @@ Play Solo in Studio works. Bots wander, hunt, and flee.
 
 ## Studio
 
-New Baseplate (or a new experience). Rojo Connect. Accept. Play.
+Do **not** reinstall Git, Rokit, or Studio. After I push, do this full reset once:
 
-Game Settings → Security → **Enable Studio Access to API Services** (DataStores).
+```
+cd $HOME\Documents\highrise
+git pull
+```
+
+Ctrl+C the Rojo window. Then:
+
+```
+rojo serve
+```
+
+Studio: Plugins → Rojo → Connect → Accept.
+
+One-time in Explorer: delete **Baseplate** and the default **SpawnLocation** (sun pad). Leave **HighriseMap**.
+
+Play. HUD should say **HIGHRISE  HR-9**. You spawn inside the marble room.
+
+Rokit is already installed. Never run `rokit install` unless `rojo` is missing from PATH.
 
 ## Robux
 

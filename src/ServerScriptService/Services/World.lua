@@ -142,113 +142,89 @@ function World.ensureShell()
 end
 
 function World.build()
-	for _, name in ipairs({ "HighriseGround", "HighriseMap", "Highrise", "HR_Floor", "HR_Ceiling", "HR_WallS", "HR_WallN", "HR_WallE", "HR_WallW", "HR_Sign", "Baseplate", "SpawnLocation", "Spawn" }) do
-		local inst = workspace:FindFirstChild(name)
-		if inst then
-			inst:Destroy()
-		end
+	-- Never Destroy HighriseMap while Rojo is connected — it respawns stacked.
+	local map = workspace:FindFirstChild("HighriseMap")
+	if not (map and map:IsA("Model")) then
+		map = Instance.new("Model")
+		map.Name = "HighriseMap"
+		map.Parent = workspace
 	end
-
-	root = Instance.new("Model")
-	root.Name = "Highrise"
-	root.Parent = workspace
+	root = map
 	waypoints = {}
 	spawns = {}
 	tasks = {}
 
-	-- Floor the camera cannot miss.
-	part({
-		Name = "Floor",
-		Size = Vector3.new(HALF * 2, 2, HALF * 2),
-		Position = Vector3.new(0, 0, 0),
-		Material = Enum.Material.Marble,
-		Color = marble,
-	})
-	part({
+	local function box(name: string, size: Vector3, pos: Vector3, color: Color3, mat: Enum.Material): BasePart
+		local p = map:FindFirstChild(name)
+		if not (p and p:IsA("BasePart")) then
+			p = part({ Name = name }, map)
+		end
+		local b = p :: BasePart
+		b.Anchored = true
+		b.CanCollide = true
+		b.Size = size
+		b.CFrame = CFrame.new(pos)
+		b.Color = color
+		b.Material = mat
+		b.Transparency = 0
+		b.TopSurface = Enum.TopSurface.Smooth
+		b.BottomSurface = Enum.BottomSurface.Smooth
+		return b
+	end
+
+	box("HR_Floor", Vector3.new(HALF * 2, 2, HALF * 2), Vector3.new(0, 1, 0), marble, Enum.Material.Marble)
+	box("HR_Ceiling", Vector3.new(HALF * 2, 2, HALF * 2), Vector3.new(0, WALL_H, 0), ink, Enum.Material.SmoothPlastic)
+	box("HR_WallS", Vector3.new(HALF * 2, WALL_H, 2), Vector3.new(0, WALL_H / 2 + 1, -HALF), ivory, Enum.Material.Marble)
+	box("HR_WallN", Vector3.new(HALF * 2, WALL_H, 2), Vector3.new(0, WALL_H / 2 + 1, HALF), ivory, Enum.Material.Marble)
+	box("HR_WallE", Vector3.new(2, WALL_H, HALF * 2), Vector3.new(HALF, WALL_H / 2 + 1, 0), ivory, Enum.Material.Marble)
+	box("HR_WallW", Vector3.new(2, WALL_H, HALF * 2), Vector3.new(-HALF, WALL_H / 2 + 1, 0), ivory, Enum.Material.Marble)
+	local sign = box("HR_Sign", Vector3.new(16, 3, 0.6), Vector3.new(0, 10, -HALF + 1.4), gold, Enum.Material.Neon)
+	sign.CanCollide = false
+	light(sign, gold, 4, 28)
+	if not sign:FindFirstChild("SignGui") then
+		local sg = Instance.new("SurfaceGui")
+		sg.Name = "SignGui"
+		sg.Face = Enum.NormalId.Back
+		sg.Parent = sign
+		local lab = Instance.new("TextLabel")
+		lab.BackgroundTransparency = 1
+		lab.Size = UDim2.fromScale(1, 1)
+		lab.Font = Enum.Font.GothamBlack
+		lab.Text = "HIGHRISE"
+		lab.TextColor3 = ink
+		lab.TextScaled = true
+		lab.Parent = sg
+	end
+
+	for _, ch in ipairs(map:GetChildren()) do
+		if ch:GetAttribute("HRFurn") then
+			ch:Destroy()
+		end
+	end
+
+	local function furn(props: { [string]: any }): BasePart
+		local p = part(props, map)
+		p:SetAttribute("HRFurn", true)
+		return p
+	end
+
+	furn({
 		Name = "Carpet",
 		Size = Vector3.new(10, 0.25, 28),
-		Position = Vector3.new(0, 1.15, 0),
+		Position = Vector3.new(0, 2.15, 0),
 		Material = Enum.Material.Fabric,
 		Color = carpet,
 	})
-
-	-- Four opaque walls. No glass facing spawn.
-	part({
-		Name = "WallS",
-		Size = Vector3.new(HALF * 2, WALL_H, 2),
-		Position = Vector3.new(0, WALL_H / 2, -HALF),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-	part({
-		Name = "WallN",
-		Size = Vector3.new(HALF * 2, WALL_H, 2),
-		Position = Vector3.new(0, WALL_H / 2, HALF),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-	part({
-		Name = "WallE",
-		Size = Vector3.new(2, WALL_H, HALF * 2),
-		Position = Vector3.new(HALF, WALL_H / 2, 0),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-	part({
-		Name = "WallW",
-		Size = Vector3.new(2, WALL_H, HALF * 2),
-		Position = Vector3.new(-HALF, WALL_H / 2, 0),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-	part({
-		Name = "Ceiling",
-		Size = Vector3.new(HALF * 2, 2, HALF * 2),
-		Position = Vector3.new(0, WALL_H, 0),
-		Material = Enum.Material.SmoothPlastic,
-		Color = ink,
-	})
-
-	-- Gold sign on the wall you look at (camera default is -Z).
-	local sign = part({
-		Name = "Sign",
-		Size = Vector3.new(18, 4, 0.6),
-		Position = Vector3.new(0, 10, -HALF + 1.4),
-		Material = Enum.Material.Neon,
-		Color = gold,
-	})
-	light(sign, gold, 4, 28)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Back
-	gui.Parent = sign
-	local lab = Instance.new("TextLabel")
-	lab.BackgroundTransparency = 1
-	lab.Size = UDim2.fromScale(1, 1)
-	lab.Font = Enum.Font.GothamBlack
-	lab.Text = "HIGHRISE"
-	lab.TextColor3 = ink
-	lab.TextScaled = true
-	lab.Parent = gui
-
-	-- Pillars
 	for _, x in ipairs({ -14, 14 }) do
 		for _, z in ipairs({ -12, 12 }) do
-			part({
+			furn({
 				Size = Vector3.new(2, WALL_H - 2, 2),
 				Position = Vector3.new(x, WALL_H / 2, z),
 				Material = Enum.Material.Marble,
 				Color = ivory,
 			})
-			part({
-				Size = Vector3.new(2.6, 0.5, 2.6),
-				Position = Vector3.new(x, 1.4, z),
-				Material = Enum.Material.Metal,
-				Color = brass,
-			})
 		end
 	end
-
-	-- Lights
 	for _, pos in ipairs({
 		Vector3.new(0, 12, 0),
 		Vector3.new(-10, 12, -8),
@@ -256,7 +232,7 @@ function World.build()
 		Vector3.new(-10, 12, 8),
 		Vector3.new(10, 12, 8),
 	}) do
-		local bowl = part({
+		local bowl = furn({
 			Size = Vector3.new(3, 0.4, 3),
 			Position = pos,
 			Material = Enum.Material.Neon,
@@ -265,44 +241,36 @@ function World.build()
 		})
 		light(bowl, Color3.fromRGB(255, 220, 170), 3.5, 24)
 	end
-
-	-- Furniture
-	part({
+	furn({
 		Size = Vector3.new(10, 1.2, 3.2),
-		Position = Vector3.new(0, 1.7, 8),
+		Position = Vector3.new(0, 2.7, 8),
 		Material = Enum.Material.Wood,
 		Color = wood,
-	})
-	part({
-		Size = Vector3.new(10, 0.2, 3.4),
-		Position = Vector3.new(0, 2.4, 8),
-		Material = Enum.Material.Fabric,
-		Color = wine,
-	})
-	part({
-		Size = Vector3.new(8, 3, 1.4),
-		Position = Vector3.new(14, 2.6, -16),
-		Material = Enum.Material.Wood,
-		Color = wood,
-	})
-	part({
-		Size = Vector3.new(6, 2.2, 2.4),
-		Position = Vector3.new(-14, 2.2, 14),
-		Material = Enum.Material.Marble,
-		Color = ivory,
-	})
-	part({
-		Size = Vector3.new(5, 0.3, 8),
-		Position = Vector3.new(0, 1.2, -10),
-		Material = Enum.Material.Glass,
-		Color = Color3.fromRGB(40, 80, 100),
-		Transparency = 0.25,
 	})
 
-	makeTask("Guest book", Vector3.new(-14, 1.8, -8), brass)
-	makeTask("Wine cellar", Vector3.new(14, 1.8, 8), wine)
-	makeTask("Piano", Vector3.new(-14, 1.8, 8), ivory)
-	makeTask("Fuse box", Vector3.new(14, 1.8, -8), Color3.fromRGB(90, 90, 100))
+	local function addTask(name: string, pos: Vector3, color: Color3)
+		local t = furn({
+			Name = "Task_" .. name,
+			Size = Vector3.new(3, 1.4, 3),
+			Position = pos,
+			Material = Enum.Material.Metal,
+			Color = color,
+		})
+		light(t, color, 2.4, 14)
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Complete"
+		prompt.ObjectText = name
+		prompt.HoldDuration = 1
+		prompt.MaxActivationDistance = 10
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = t
+		table.insert(tasks, t)
+		wp(Vector3.new(pos.X, STAND_Y, pos.Z))
+	end
+	addTask("Guest book", Vector3.new(-14, 2.8, -8), brass)
+	addTask("Wine cellar", Vector3.new(14, 2.8, 8), wine)
+	addTask("Piano", Vector3.new(-14, 2.8, 8), ivory)
+	addTask("Fuse box", Vector3.new(14, 2.8, -8), Color3.fromRGB(90, 90, 100))
 
 	spawns = {
 		Vector3.new(12, STAND_Y, 12),
@@ -315,21 +283,25 @@ function World.build()
 	for _, s in ipairs(spawns) do
 		wp(s)
 	end
-	wp(Vector3.new(0, STAND_Y, 0))
 	World.LobbySpawn = Vector3.new(0, STAND_Y, 4)
 
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "LobbySpawn"
-	spawn.Size = Vector3.new(8, 1, 8)
-	spawn.CFrame = CFrame.new(0, 1.6, 4)
-	spawn.Anchored = true
-	spawn.Transparency = 1
-	spawn.CanCollide = false
-	spawn.Neutral = true
-	spawn.Duration = 0
-	spawn.Parent = root
+	local spawnInst = map:FindFirstChild("LobbySpawn")
+	if not (spawnInst and spawnInst:IsA("SpawnLocation")) then
+		spawnInst = Instance.new("SpawnLocation")
+		spawnInst.Name = "LobbySpawn"
+		spawnInst.Parent = map
+	end
+	local sp = spawnInst :: SpawnLocation
+	sp.Size = Vector3.new(8, 1, 8)
+	sp.CFrame = CFrame.new(0, 2.5, 4)
+	sp.Anchored = true
+	sp.Transparency = 1
+	sp.CanCollide = true
+	sp.Neutral = true
+	sp.Duration = 0
+	sp.Enabled = true
 
-	print("[Highrise] Room built at origin. walls=±", HALF)
+	print("[Highrise] Room posed around spawn.")
 end
 
 return World

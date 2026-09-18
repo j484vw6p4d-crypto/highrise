@@ -94,7 +94,7 @@ end
 
 function Bots.spawn(count: number)
 	Bots.clear()
-	local parent = workspace:FindFirstChild("Highrise") or workspace
+	local parent = workspace:FindFirstChild("HighriseMap") or workspace:FindFirstChild("Highrise") or workspace
 	local spawnList = World.spawns()
 	local fallback = {
 		Vector3.new(28, 5, 22),

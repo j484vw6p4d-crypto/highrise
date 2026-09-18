@@ -102,7 +102,7 @@ local title = mk("TextLabel", {
 	Position = UDim2.fromOffset(16, 6),
 	Size = UDim2.fromOffset(200, 22),
 	Font = Enum.Font.GothamMedium,
-	Text = "HIGHRISE",
+	Text = Config.Title .. "  " .. Config.BuildId,
 	TextColor3 = ivory,
 	TextSize = 13,
 	TextXAlignment = Enum.TextXAlignment.Left,
@@ -487,7 +487,7 @@ end)
 
 -- Task prompts. Never block the HUD/timer on this.
 task.spawn(function()
-	local folder = workspace:WaitForChild("Highrise", 30)
+	local folder = workspace:WaitForChild("HighriseMap", 30) or workspace:WaitForChild("Highrise", 5)
 	if not folder then
 		return
 	end
@@ -529,7 +529,7 @@ RunService.RenderStepped:Connect(function()
 	local m = math.floor(left / 60)
 	local s = left % 60
 	timerLab.Text = string.format("%d:%02d", m, s)
-	title.Text = if state.phase == "Round" then string.upper(state.role) else "HIGHRISE"
+	title.Text = if state.phase == "Round" then string.upper(state.role) else (Config.Title .. "  " .. Config.BuildId)
 end)
 
 task.defer(function()

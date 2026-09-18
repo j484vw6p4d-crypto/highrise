@@ -275,7 +275,7 @@ local function dropGun(at: Vector3)
 	p.Material = Enum.Material.Metal
 	p.Anchored = true
 	p.Position = at + Vector3.new(0, 1.4, 0)
-	p.Parent = workspace:FindFirstChild("Highrise") or workspace
+	p.Parent = workspace:FindFirstChild("HighriseMap") or workspace:FindFirstChild("Highrise") or workspace
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Pick up revolver"
 	prompt.HoldDuration = 0.4
